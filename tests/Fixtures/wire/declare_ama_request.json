@@ -1,0 +1,39 @@
+{
+    "inputDeclCommun": {
+        "dtDebutPeriode": "2020-01-01",
+        "dtFinPeriode": "2020-01-01",
+        "dtPaiementSalaire": "2020-01-01",
+        "mntAcompteSalarie": 0,
+        "mntIndemnitesKilometriques": 0,
+        "mntSalaireHoraireNet": 0,
+        "mntSalaireNetMensuel": 500,
+        "nbHeures": 100,
+        "nbHeuresSpecifiques": 0,
+        "nbJoursCongesPayes": 0
+    },
+    "inputDeclEnfant": [
+        {
+            "dtNaissanceEnfant": "2015-01-12",
+            "nomEnfant": "L'HOMME",
+            "prenomEnfant": "JEAN-MICHEL",
+            "joursAccueilHandicap": 10,
+            "joursAccueil24Consecutive": 0
+        }
+    ],
+    "inputSp": {
+        "dtNaissanceSalarie": "1980-01-30",
+        "nirSalarie": "string",
+        "numeroPajeSalarie": "string"
+    },
+    "finDeContrat": {
+        "mntIndDepartRetraite": 0,
+        "mntIndCcp": 0,
+        "mntIndPreavis": 0,
+        "mntIndPrecarite": 0
+    },
+    "mntIndemnitesEntretien": 0,
+    "mntIndemnitesRepas": 0,
+    "nbHeuresComplementaires": 0,
+    "nbHeuresMajorees": 0,
+    "nbJoursActivite": 10
+}

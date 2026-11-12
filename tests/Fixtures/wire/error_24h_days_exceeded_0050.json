@@ -1,0 +1,5 @@
+{
+    "code": "ER_API_050_0050",
+    "message": "Le nombre de jours de garde de 24 heures consécutives ne peut pas dépasser le nombre de jours d'activité saisi",
+    "description": "Le nombre de jours de garde de 24 heures consécutives ne doit pas être supérieur au nombre de jours d'activité saisi"
+}

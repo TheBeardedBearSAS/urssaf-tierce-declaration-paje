@@ -1,0 +1,5 @@
+{
+    "code": "COMPTE_DEJA_MANDATE",
+    "message": "Le compte est déjà mandaté",
+    "description": "Il existe déjà un autre établissement mandataire pour ce numéro de compte"
+}

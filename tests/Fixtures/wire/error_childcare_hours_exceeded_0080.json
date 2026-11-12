@@ -1,0 +1,5 @@
+{
+    "code": "ER_API_050_0080",
+    "message": "Le nombre d'heures de garde d'un même enfant ne doit pas dépasser [NMX] heures pour ce mois et cet allocataire",
+    "description": "La somme des heures déclarées dépasse le nombre d'heures de garde autorisé pour cet enfant et cette période d'emploi"
+}

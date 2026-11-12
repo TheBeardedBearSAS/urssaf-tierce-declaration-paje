@@ -1,0 +1,5 @@
+{
+    "code": "ER_API_DECLA_00040",
+    "message": "Un enfant maximum par déclaration",
+    "description": "Un seul enfant peut être gardé"
+}

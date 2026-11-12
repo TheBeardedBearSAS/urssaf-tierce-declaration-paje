@@ -1,0 +1,12 @@
+{
+    "verificationEnfantPe": [
+        {
+            "inputEnfantPe": {
+                "dtNaissanceEnfant": "2015-01-12",
+                "nomEnfant": "L'HOMME",
+                "prenomEnfant": "JEAN-MICHEL"
+            },
+            "reponseStatutEnfant": 1
+        }
+    ]
+}

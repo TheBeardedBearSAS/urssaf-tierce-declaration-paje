@@ -1,0 +1,5 @@
+{
+    "code": "ER_API_050_0051",
+    "message": "Le nombre de jours accueil Handicap invalide",
+    "description": "Le nombre de jours de garde pour l'accueil d'un enfant en situation de handicap doit correspondre au nombre de jours d'activité saisi"
+}

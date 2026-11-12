@@ -1,0 +1,5 @@
+{
+    "code": "ER_API_050_0060",
+    "message": "La fin de contrat doit être effectuée pour l'enfant gardé",
+    "description": "Incohérence entre l'enfant fin de contrat et l'enfant gardé"
+}

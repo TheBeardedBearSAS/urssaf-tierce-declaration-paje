@@ -1,0 +1,5 @@
+{
+    "code": "ER_API_050_0070",
+    "message": "Déclaration existante sur la période",
+    "description": "Une déclaration existe déjà pour ce salarié, ce mode de garde, cette période d'emploi et cet enfant"
+}

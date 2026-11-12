@@ -1,0 +1,5 @@
+{
+    "code": "ER_API_020_0010",
+    "message": "Aucun employeur trouvé pour ce numéro",
+    "description": "L'identifiant de l'employeur ne correspond à aucun employeur connu dans le SI Pajemploi"
+}

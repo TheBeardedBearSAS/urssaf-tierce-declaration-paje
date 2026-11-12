@@ -1,0 +1,18 @@
+{
+    "erreursNonBloquantes": [
+        {
+            "code": "ER_API_020_NB_0000",
+            "description": "Le compte employeur n'est pas actif dans le SI Pajemploi.",
+            "message": "L'inscription au site internet n'est pas effective"
+        }
+    ],
+    "outputVerificationSp": {
+        "etatCompteEnLigne": "Actif",
+        "indcAma": true,
+        "indcGed": true,
+        "numeroPajeSalarie": "string"
+    },
+    "salarieAssocieOk": true,
+    "salarieCreeOk": true,
+    "salarieDejaAssocieOK": false
+}

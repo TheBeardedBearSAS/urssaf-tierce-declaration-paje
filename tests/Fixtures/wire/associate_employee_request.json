@@ -1,0 +1,27 @@
+{
+    "dtDebutAgrement": "1980-01-30",
+    "dtNaissanceSalarie": "1980-01-30",
+    "inputAdresseSalarie": {
+        "codeCommune": "string",
+        "codePostal": "string",
+        "complementLocalisation": "string",
+        "lettreVoie": "string",
+        "libelleVoie": "string",
+        "lieuDit": "string",
+        "numVoie": 0,
+        "typeVoie": "string"
+    },
+    "inputIdentificationSalarie": {
+        "cdCivilite": "1",
+        "codePaysNaissance": "string",
+        "departementNaissance": "string",
+        "dtNaissanceSalarie": "1980-01-30",
+        "nomNaissance": "string",
+        "nomUsage": "string",
+        "prenom": "string",
+        "villeNaissance": "string"
+    },
+    "nirSalarie": "string",
+    "numeroPajeSalarie": "string",
+    "typeActiviteSalarie": "string"
+}

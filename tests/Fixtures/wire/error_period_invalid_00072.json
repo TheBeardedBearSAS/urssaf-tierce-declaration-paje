@@ -1,0 +1,5 @@
+{
+    "code": "ER_API_DECLA_00072",
+    "message": "Période d'emploi invalide",
+    "description": "Les déclarations antérieures à [PERIODE1_MONO] ne sont plus possibles"
+}

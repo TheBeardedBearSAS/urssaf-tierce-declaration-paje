@@ -1,0 +1,5 @@
+{
+    "code": "ER_API_020_0000",
+    "message": "La date de naissance et le numéro Pajemploi ne correspondent pas",
+    "description": "La date de naissance correspondant au numéro de Pajemploi de l'employeur est différente de la date de naissance fournie"
+}

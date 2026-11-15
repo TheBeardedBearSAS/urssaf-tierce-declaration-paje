@@ -1,8 +1,29 @@
 {
     "name": "thebeardedbear/urssaf-tierce-declaration-paje",
     "description": "Client and domain model for the URSSAF \"API Tierce Déclaration PAJE\" (third-party Pajemploi declaration for childcare employers)",
-    "license": "proprietary",
+    "license": "MIT",
     "type": "symfony-bundle",
+    "keywords": [
+        "urssaf",
+        "api",
+        "tierce-declaration",
+        "paje",
+        "pajemploi",
+        "garde-d-enfant",
+        "symfony-bundle"
+    ],
+    "authors": [
+        {
+            "name": "TheBeardedBear",
+            "homepage": "https://github.com/TheBeardedBearSAS"
+        }
+    ],
+    "homepage": "https://github.com/TheBeardedBearSAS/urssaf-tierce-declaration-paje",
+    "support": {
+        "issues": "https://github.com/TheBeardedBearSAS/urssaf-tierce-declaration-paje/issues",
+        "source": "https://github.com/TheBeardedBearSAS/urssaf-tierce-declaration-paje",
+        "security": "https://github.com/TheBeardedBearSAS/urssaf-tierce-declaration-paje/security/policy"
+    },
     "require": {
         "php": ">=8.2"
     },

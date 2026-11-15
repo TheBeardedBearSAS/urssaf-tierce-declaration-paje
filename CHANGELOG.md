@@ -13,6 +13,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   packages.
 - Specification: official OpenAPI contracts (`docs/openapi/`), official documentation (links in `docs/api-reference.md`, local copy in the git-ignored `docs/reference/`), technical
   reference (`docs/api-reference.md`) and implementation roadmap (`docs/roadmap.md`).
+- Signed releases (workflow `release.yml`): each GitHub release carries the distribution archive, its `SHA256SUMS`
+  and a SLSA build provenance attestation (`*.intoto.jsonl`, Sigstore); see *Verifying a release* in SECURITY.md.
+- CodeQL analysis of the GitHub Actions workflows (workflow `codeql.yml`) on every pull request and push to `main`.
 
 ### Changed
 
@@ -20,6 +23,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   repository is public), every GitHub Action pinned to a commit SHA and kept up to date by Dependabot, hadolint on the
   Dockerfile (`make hadolint`, part of `make ci`) with a non-root development image, and benchmarks with PHPBench
   (`make bench`, CI job `benchmark`, isolated in `tools/phpbench`).
+- CI: the SonarQube Cloud analysis also requires the repository variable `SONARCLOUD=enabled`, set once the
+  project is imported on SonarQube Cloud.
 
 - README: maintainer (The Bearded Bear), the other URSSAF packages and professional support; composer
   `authors` now points to https://the-bearded-bear.com.

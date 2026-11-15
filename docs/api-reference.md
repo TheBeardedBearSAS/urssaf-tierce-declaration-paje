@@ -22,6 +22,12 @@ Vocabulary: *PE* = *particulier employeur* (private employer); *SP* = *salarié 
 *PAS* = *prélèvement à la source* (withholding at source, art. 204A CGI); *CMG* = *complément de libre choix du mode de
 garde*; *ODPF* = *organisme débiteur des prestations familiales* (Caf/MSA).
 
+> **Source and rights.** The specification, the field names, the codes and the official JSON examples quoted here come
+> from the URSSAF documents listed above and remain URSSAF's property. They are reproduced only so the package can
+> interoperate with the API, and they are not covered by this package's MIT license. In case of discrepancy, the
+> official URSSAF documentation prevails. The official documents themselves are not versioned: download them into
+> `docs/reference/`, a local git-ignored folder. This package is not affiliated with URSSAF.
+
 ---
 
 ## 1. General

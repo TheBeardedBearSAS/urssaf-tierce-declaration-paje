@@ -3,3 +3,6 @@ var/
 .phpunit.cache/
 .idea/
 .vscode/
+
+# Official URSSAF documents: local copy only, never versioned (download them from the links in docs/api-reference.md)
+/docs/reference/

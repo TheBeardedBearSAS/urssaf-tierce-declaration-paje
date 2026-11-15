@@ -7,6 +7,8 @@ domicile*), and apply the withholding at source.
 
 Namespace: `TheBeardedBear\UrssafTierceDeclarationPaje`.
 
+Developed and maintained by [The Bearded Bear](https://the-bearded-bear.com).
+
 > [!IMPORTANT]
 > **Unofficial package.** This project is an independent open-source implementation of a public API. It is not
 > developed, endorsed, certified or supported by URSSAF, and it is not affiliated with URSSAF in any way. "URSSAF" is
@@ -63,6 +65,34 @@ make help        # every target
 ## Versioning
 
 Semantic Versioning. `SpecVersion::CURRENT` holds the version of the official URSSAF documentation implemented.
+
+<!-- the-bearded-bear:start -->
+## Other URSSAF packages
+
+The same architecture, quality gate and conventions, one package per URSSAF API:
+
+| API | Package | Status |
+|---|---|---|
+| Tiers de prestations (immediate tax-credit advance) | [`thebeardedbear/urssaf-tiers-prestations`](https://github.com/TheBeardedBearSAS/urssaf-tiers-prestations) | Released (Packagist) |
+| Attestations Vérification Code Sécurité (certificate verification) | [`thebeardedbear/urssaf-attestations-verification-code-securite`](https://github.com/TheBeardedBearSAS/urssaf-attestations-verification-code-securite) | Implemented, on Packagist (no tagged release yet) |
+| DPAE (pre-employment declaration) | `thebeardedbear/urssaf-dpae` | Coming soon |
+| Mobilité internationale (posting of workers abroad) | `thebeardedbear/urssaf-mobilite-internationale` | Coming soon |
+| Plateforme numérique (withholding of contributions by digital platforms) | `thebeardedbear/urssaf-plateforme-numerique` | Coming soon |
+| Tierce Déclaration auto-entrepreneur | `thebeardedbear/urssaf-tierce-declaration-auto-entrepreneur` | Coming soon |
+| Tierce Déclaration CESU | `thebeardedbear/urssaf-tierce-declaration-cesu` | Coming soon |
+
+## Professional support
+
+This package is developed and maintained by [The Bearded Bear](https://the-bearded-bear.com).
+If you need help with an URSSAF integration, The Bearded Bear can help with:
+
+- the URSSAF habilitation and homologation process (subscription, sandbox tests, move to production);
+- integrating the package into your application (Symfony, Doctrine or framework-free);
+- support with a guaranteed response time, including the follow-up of URSSAF API changes;
+- custom developments on top of the package.
+
+Contact: [the-bearded-bear.com](https://the-bearded-bear.com).
+<!-- the-bearded-bear:end -->
 
 ## Contributing and security
 

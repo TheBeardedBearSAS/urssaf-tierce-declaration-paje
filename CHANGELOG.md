@@ -16,5 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- README: maintainer (The Bearded Bear), the other URSSAF packages and professional support; composer
+  `authors` now points to https://the-bearded-bear.com.
+
 - The package is open source under the MIT license (previously proprietary). Added `CONTRIBUTING.md` and
   `SECURITY.md`, and a notice in the README stating that the package is unofficial and not affiliated with URSSAF.

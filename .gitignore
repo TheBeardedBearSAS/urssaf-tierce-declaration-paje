@@ -6,3 +6,6 @@ var/
 
 # Official URSSAF documents: local copy only, never versioned (download them from the links in docs/api-reference.md)
 /docs/reference/
+
+# Benchmark runner dependencies (tools/phpbench, installed by make bench)
+/tools/*/vendor/

@@ -1,6 +1,7 @@
 # URSSAF "API Tierce Déclaration PAJE" for PHP
 
 <!-- the-bearded-bear:badges:start -->
+[![CI](https://github.com/TheBeardedBearSAS/urssaf-tierce-declaration-paje/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/TheBeardedBearSAS/urssaf-tierce-declaration-paje/actions/workflows/ci.yml?query=branch%3Amain) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/TheBeardedBearSAS/urssaf-tierce-declaration-paje/badge)](https://scorecard.dev/viewer/?uri=github.com/TheBeardedBearSAS/urssaf-tierce-declaration-paje)
 [![PHPStan level max](https://img.shields.io/badge/PHPStan-level%20max-brightgreen)](phpstan.neon.dist) [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 <!-- the-bearded-bear:badges:end -->
 
@@ -79,17 +80,17 @@ Semantic Versioning. `SpecVersion::CURRENT` holds the version of the official UR
 <!-- the-bearded-bear:start -->
 ## Other URSSAF packages
 
-The same architecture, quality gate and conventions, one package per URSSAF API:
+The same architecture, quality gate and conventions, one package per URSSAF API (overview: [the-bearded-bear.com/open-source/urssaf](https://the-bearded-bear.com/open-source/urssaf)):
 
 | API | Package | Status |
 |---|---|---|
 | Tiers de prestations (immediate tax-credit advance) | [`thebeardedbear/urssaf-tiers-prestations`](https://github.com/TheBeardedBearSAS/urssaf-tiers-prestations) | Released (Packagist) |
 | Attestations Vérification Code Sécurité (certificate verification) | [`thebeardedbear/urssaf-attestations-verification-code-securite`](https://github.com/TheBeardedBearSAS/urssaf-attestations-verification-code-securite) | Released (Packagist) |
-| DPAE (pre-employment declaration) | `thebeardedbear/urssaf-dpae` | Coming soon |
-| Mobilité internationale (posting of workers abroad) | `thebeardedbear/urssaf-mobilite-internationale` | Coming soon |
-| Plateforme numérique (withholding of contributions by digital platforms) | `thebeardedbear/urssaf-plateforme-numerique` | Coming soon |
-| Tierce Déclaration auto-entrepreneur | `thebeardedbear/urssaf-tierce-declaration-auto-entrepreneur` | Coming soon |
-| Tierce Déclaration CESU | `thebeardedbear/urssaf-tierce-declaration-cesu` | Coming soon |
+| DPAE (pre-employment declaration) | [`thebeardedbear/urssaf-dpae`](https://github.com/TheBeardedBearSAS/urssaf-dpae) | Coming soon |
+| Mobilité internationale (posting of workers abroad) | [`thebeardedbear/urssaf-mobilite-internationale`](https://github.com/TheBeardedBearSAS/urssaf-mobilite-internationale) | Coming soon |
+| Plateforme numérique (withholding of contributions by digital platforms) | [`thebeardedbear/urssaf-plateforme-numerique`](https://github.com/TheBeardedBearSAS/urssaf-plateforme-numerique) | Coming soon |
+| Tierce Déclaration auto-entrepreneur | [`thebeardedbear/urssaf-tierce-declaration-auto-entrepreneur`](https://github.com/TheBeardedBearSAS/urssaf-tierce-declaration-auto-entrepreneur) | Coming soon |
+| Tierce Déclaration CESU | [`thebeardedbear/urssaf-tierce-declaration-cesu`](https://github.com/TheBeardedBearSAS/urssaf-tierce-declaration-cesu) | Coming soon |
 
 ## Professional support
 
@@ -101,7 +102,7 @@ If you need help with an URSSAF integration, The Bearded Bear can help with:
 - support with a guaranteed response time, including the follow-up of URSSAF API changes;
 - custom developments on top of the package.
 
-Contact: [the-bearded-bear.com](https://the-bearded-bear.com).
+Project page and integration offer: [the-bearded-bear.com/open-source/urssaf-tierce-declaration-paje](https://the-bearded-bear.com/open-source/urssaf-tierce-declaration-paje).
 <!-- the-bearded-bear:end -->
 
 ## Contributing and security

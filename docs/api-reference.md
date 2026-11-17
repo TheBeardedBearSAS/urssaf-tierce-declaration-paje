@@ -15,7 +15,8 @@ when the PDF is not versioned. Here the PDF (1.5.2) is newer than the Swagger (1
 adds blocking / non-blocking messages to PDF §4.4 and has no wire impact. Field names, codes and wire values below are
 reproduced verbatim from the specification (they are French by design); everything else in the package is English.
 
-> Status: the domain model and the wire mappers are implemented; the HTTP gateway and the application layer are pending (see [roadmap.md](roadmap.md)).
+> Status: implemented (domain, wire, HTTP gateway, use cases, Symfony and Doctrine bridges), not released yet. The
+> open points of §5 are still to be settled on the sandbox (`make test-contract`, [testing.md](testing.md)).
 
 Vocabulary: *PE* = *particulier employeur* (private employer); *SP* = *salarié particulier* (private-employed worker);
 *AMA* = *assistante maternelle agréée* (licensed childminder); *GED* = *garde d'enfants à domicile* (home childcare);

@@ -23,8 +23,11 @@ Developed and maintained by [The Bearded Bear](https://the-bearded-bear.com).
 
 > 🚧 **Status: implemented, not released yet.** The domain model, the HTTP gateway (OAuth2, quotas, error
 > classification), the use cases (employers, mandates, declarations, unknown outcomes, outbox) and the framework-free
-> wiring are implemented and covered by tests. The Symfony bundle is implemented ([docs/symfony.md](docs/symfony.md)); the Doctrine bridge is available ([docs/doctrine.md](docs/doctrine.md)): persistence is Doctrine
-> (the default of the bundle when `doctrine/orm` is installed), in memory (tests) or yours. No version is tagged yet and the API may still change. See [docs/roadmap.md](docs/roadmap.md).
+> wiring are implemented and covered by tests. The Symfony bundle is implemented ([docs/symfony.md](docs/symfony.md))
+> and the Doctrine bridge is available ([docs/doctrine.md](docs/doctrine.md)): persistence is Doctrine (the default of
+> the bundle when `doctrine/orm` is installed), in memory (tests) or yours. No version is tagged yet and the API may
+> still change. The sandbox contract suite has not been run yet (open points in
+> [docs/api-reference.md](docs/api-reference.md) §5).
 
 ## Scope
 
@@ -96,7 +99,9 @@ contacts URSSAF.
 - [docs/api-reference.md](docs/api-reference.md) — technical reference (single source of truth for the package).
 - [docs/standalone.md](docs/standalone.md) — wiring without a framework, scheduling, testing with the simulator.
 - [docs/symfony.md](docs/symfony.md) — Symfony bundle: configuration, commands, Messenger, scheduler, locks, diagnostics, translations.
+- [docs/doctrine.md](docs/doctrine.md) — Doctrine bridge: mapping, dedicated entity manager, concurrency, personal data.
 - [docs/workflow.md](docs/workflow.md) — lifecycles, outcome and re-entry tables, unknown outcomes, safety crons.
+- [docs/integration-events.md](docs/integration-events.md) — public integration events `urssaf.paje.*` and the outbox.
 - [docs/testing.md](docs/testing.md) — test suites, fakes, quality gates and the sandbox contract suite.
 - [docs/roadmap.md](docs/roadmap.md) — planned architecture and order of work.
 - [docs/adr/](docs/adr/README.md) — architecture decision records.

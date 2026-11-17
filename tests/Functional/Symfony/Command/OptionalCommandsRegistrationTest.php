@@ -18,7 +18,8 @@ final class OptionalCommandsRegistrationTest extends TestCase
     public function testTheReconciliationIsRegisteredWithAndWithoutTheOutbox(): void
     {
         foreach ([[], ['outbox' => ['enabled' => true]]] as $config) {
-            $application = new Application(Harness::boot($config)->kernel);
+            $harness = Harness::boot($config);
+            $application = new Application($harness->kernel);
 
             static::assertTrue($application->has('urssaf:paje:declarations:reconcile-stale'));
             static::assertSame('urssaf:paje:declarations:reconcile-stale', $application->get('urssaf:paje:declarations:reconcile-stale')->getName());
@@ -27,8 +28,10 @@ final class OptionalCommandsRegistrationTest extends TestCase
 
     public function testTheOutboxCommandsAreBothRegisteredWithTheOutboxOnly(): void
     {
-        $enabled = new Application(Harness::boot(['outbox' => ['enabled' => true]])->kernel);
-        $disabled = new Application(Harness::boot()->kernel);
+        $enabledHarness = Harness::boot(['outbox' => ['enabled' => true]]);
+        $disabledHarness = Harness::boot();
+        $enabled = new Application($enabledHarness->kernel);
+        $disabled = new Application($disabledHarness->kernel);
 
         foreach (self::OUTBOX_COMMANDS as $name) {
             static::assertTrue($enabled->has($name), $name);

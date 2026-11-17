@@ -82,7 +82,8 @@ final class CommandsRegistrationTest extends TestCase
 
     public function testTheOldNameOfTheReconciliationIsAnAlias(): void
     {
-        $application = new Application(Harness::boot()->kernel);
+        $harness = Harness::boot();
+        $application = new Application($harness->kernel);
 
         static::assertSame('urssaf:paje:declarations:reconcile-stale', $application->find('urssaf:paje:declarations:reconcile')->getName());
     }
@@ -90,7 +91,8 @@ final class CommandsRegistrationTest extends TestCase
     #[DataProvider('tenantCommands')]
     public function testTheCommandsOfATenantFallBackOnTheConfiguredTenant(string $name): void
     {
-        $definition = (new Application(Harness::boot()->kernel))->find($name)->getDefinition();
+        $harness = Harness::boot();
+        $definition = (new Application($harness->kernel))->find($name)->getDefinition();
 
         static::assertTrue($definition->hasOption('tenant'), $name);
         static::assertTrue($definition->getOption('tenant')->isValueRequired(), $name);
@@ -108,7 +110,8 @@ final class CommandsRegistrationTest extends TestCase
 
     public function testNoCommandAcceptsAPersonalValueAsAnOption(): void
     {
-        $application = new Application(Harness::boot(['outbox' => ['enabled' => true]])->kernel);
+        $harness = Harness::boot(['outbox' => ['enabled' => true]]);
+        $application = new Application($harness->kernel);
 
         foreach ($application->all('urssaf:paje') as $command) {
             foreach (array_keys($command->getDefinition()->getOptions()) as $option) {

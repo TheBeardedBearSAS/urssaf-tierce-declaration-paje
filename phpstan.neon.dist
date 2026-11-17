@@ -91,6 +91,12 @@ parameters:
             paths:
                 - tests/Unit/Domain/*Test.php
                 - tests/Unit/Domain/*/*Samples.php
+        # The optional cause of a domain exception defaults to null, like the previous exception of \Exception::__construct
+        # (it is only given by the few exceptions that wrap another failure, MandateRecordingFailed).
+        -
+            identifier: ergebnis.noParameterWithNullDefaultValue
+            paths:
+                - src/Domain/Exception/DomainException.php
         # Doctrine optimistic-lock token, read and written by the ORM through reflection: not a domain concept, so the
         # aggregates expose no accessor.
         -
@@ -102,4 +108,14 @@ parameters:
 
     shipmonkRules:
         enableAllRules: true
+        forbidCheckedExceptionInCallable:
+            allowedCheckedExceptionCallables:
+                # Test fakes that run the closure of a race scenario (another writer saving, or a violation the store
+                # raises) from inside the faked port; the closure is stored and called later, never by the declaring code,
+                # so any exception it throws is the scenario itself.
+                'TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Unit\Application\Fake\JournalingDeclarationRecords::beforeNextSave': 0
+                'TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Unit\Application\Fake\FakeSalaryGateway::duringNextCall': 0
+                'TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Unit\Application\Fake\FakeEmployerGateway::duringNextCall': 0
+                'TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Unit\Application\Fake\ConcurrentAccounts::beforeSave': 0
+                'TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Unit\Application\Fake\ConcurrentMandates::beforeSave': 0
 

@@ -103,13 +103,15 @@ final readonly class Selection
     /**
      * Copies of the selected items, so callers never share the stored instances.
      *
+     * @param callable(T): T $adopt applied to each copy (the repository remembers the version it was read at)
+     *
      * @return list<T>
      */
-    public function copies(): array
+    public function copies(callable $adopt): array
     {
         $copies = [];
         foreach ($this->items as $item) {
-            $copies[] = clone $item;
+            $copies[] = $adopt(clone $item);
         }
 
         return $copies;

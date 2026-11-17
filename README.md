@@ -21,8 +21,10 @@ Developed and maintained by [The Bearded Bear](https://the-bearded-bear.com).
 > process; the URSSAF documentation remains the authority on the API, and you remain responsible for the data your
 > application sends to URSSAF.
 
-> 🚧 **Skeleton — not implemented yet.** This repository currently contains the tooling and the specification only.
-> The implementation follows [docs/roadmap.md](docs/roadmap.md).
+> 🚧 **Status: implemented, not released yet.** The domain model, the HTTP gateway (OAuth2, quotas, error
+> classification), the use cases (employers, mandates, declarations, unknown outcomes, outbox) and the framework-free
+> wiring are implemented and covered by tests. The Symfony and Doctrine bridges are coming: until then, persistence is in
+> memory or yours. No version is tagged yet and the API may still change. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Scope
 
@@ -44,9 +46,56 @@ Developed and maintained by [The Bearded Bear](https://the-bearded-bear.com).
 OAuth2 client credentials, scope `tiersdecl.paje`, base URL `https://api.urssaf.fr/tiersdecl/v1/paje` (sandbox:
 `https://api-edi.urssaf.fr/tiersdecl/v1/paje`).
 
+## Quick start (standalone)
+
+Without a framework, the builder wires every use case from a PSR-18 client, PSR-17 factories and your credentials.
+Persistence is in memory by default (tests and prototypes); [docs/standalone.md](docs/standalone.md) lists the options and
+[docs/workflow.md](docs/workflow.md) explains the lifecycles. All values below are fictitious.
+
+```php
+use TheBeardedBear\UrssafTierceDeclarationPaje\Application\Command\ImportEmployer;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Application\Command\RegisterMandate;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Application\Dto\EmployerSelector;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Application\Port\Credentials;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Employer\EmployerReference;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Employer\PajeEmployerNumber;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Shared\CalendarDate;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Shared\ExternalReference;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Shared\TenantId;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Infrastructure\Credentials\StaticCredentialsProvider;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Infrastructure\Urssaf\ApiConfiguration;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Infrastructure\Urssaf\Environment;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Infrastructure\Urssaf\HttpTransport;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Standalone\UrssafTierceDeclarationPajeBuilder;
+
+// $httpClient is your PSR-18 client, $psr17Factory a PSR-17 request and stream factory.
+$urssaf = UrssafTierceDeclarationPajeBuilder::create(
+    new HttpTransport($httpClient, $psr17Factory, $psr17Factory),
+    new StaticCredentialsProvider(['tenant-1' => Credentials::of('my-client-id', 'my-client-secret')]),
+    ApiConfiguration::forEnvironment(Environment::Sandbox),
+)->build();
+
+$tenant = TenantId::fromString('tenant-1');
+$employer = EmployerReference::of(PajeEmployerNumber::of('Y0000000000001'), CalendarDate::fromString('1980-01-01'));
+$reference = ExternalReference::fromString('employer-42');
+
+// Record an employer you already know (no call to URSSAF), then register the mandate you hold for it (030).
+$urssaf->importEmployer()(new ImportEmployer($tenant, $reference, $employer));
+$mandate = $urssaf->registerMandate()(new RegisterMandate($tenant, EmployerSelector::byExternalReference($reference)));
+
+$state = $mandate->state; // "registered"
+```
+
+Declaring a salary (`declareSalary()`), estimating contributions, checking the employer, the employee or the children,
+resolving an unknown outcome and the safety crons are covered in [docs/standalone.md](docs/standalone.md) and
+[docs/workflow.md](docs/workflow.md). In tests, `Testing\SimulatedPajeGateway` replaces the HTTP gateway and never
+contacts URSSAF.
+
 ## Documentation
 
 - [docs/api-reference.md](docs/api-reference.md) — technical reference (single source of truth for the package).
+- [docs/standalone.md](docs/standalone.md) — wiring without a framework, scheduling, testing with the simulator.
+- [docs/workflow.md](docs/workflow.md) — lifecycles, outcome and re-entry tables, unknown outcomes, safety crons.
 - [docs/roadmap.md](docs/roadmap.md) — planned architecture and order of work.
 - [docs/adr/](docs/adr/README.md) — architecture decision records.
 - [docs/openapi/](docs/openapi/) — official OpenAPI contract(s) from the URSSAF API portal.

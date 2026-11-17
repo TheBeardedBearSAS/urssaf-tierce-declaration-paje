@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Exception;
 
 use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Validation\Violation;
+use Throwable;
 
 /**
  * Base class of every domain exception. Each one carries a stable snake_case violation code
@@ -17,9 +18,13 @@ abstract class DomainException extends \DomainException implements UrssafExcepti
     /**
      * @param array<string, scalar> $params
      */
-    protected function __construct(string $message, private readonly string $violationCode, private readonly array $params)
-    {
-        parent::__construct($message);
+    protected function __construct(
+        string $message,
+        private readonly string $violationCode,
+        private readonly array $params,
+        ?Throwable $previous = null,
+    ) {
+        parent::__construct($message, 0, $previous);
     }
 
     final public function violationCode(): string

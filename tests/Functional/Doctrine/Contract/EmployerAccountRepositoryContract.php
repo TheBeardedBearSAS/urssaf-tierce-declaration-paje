@@ -31,6 +31,12 @@ trait EmployerAccountRepositoryContract
 
     abstract protected function createRepository(): EmployerAccountRepository;
 
+    /**
+     * An independent writer over the same store: another process, another EntityManager. The in-memory adapter has one
+     * store per repository and returns the repository itself. Competing copies are read, and saved, through it.
+     */
+    abstract protected function anotherWriter(): EmployerAccountRepository;
+
     protected function setUp(): void
     {
         $this->repository = $this->createRepository();
@@ -262,5 +268,86 @@ trait EmployerAccountRepositoryContract
         static::assertSame(['account-2'], self::accountIds($this->repository->findLeastRecentlyChecked(ContractSamples::tenant(), 10)));
         $this->expectException(RecordNotFound::class);
         $this->repository->get(EmployerAccountId::fromString('account-1'));
+    }
+
+    public function testACopyChangedByAnotherWriterSinceItWasReadIsRefused(): void
+    {
+        $this->repository->save(ContractSamples::account(1));
+        $id = EmployerAccountId::fromString('account-1');
+        $first = $this->repository->get($id);
+        $second = $this->anotherWriter()->get($id);
+        $first->markMandateRegistered(ContractSamples::at('2026-11-11T09:00:00Z'));
+        $second->markMandateRegistered(ContractSamples::at('2026-11-12T09:00:00Z'));
+        $this->repository->save($first);
+
+        try {
+            $this->anotherWriter()->save($second);
+            static::fail('Expected a violation.');
+        } catch (InvariantViolation $exception) {
+            static::assertSame('employer_account.concurrent_modification', $exception->violationCode());
+            static::assertSame(EmployerAccountRepository::CONCURRENT_MODIFICATION, $exception->violationCode());
+        }
+        static::assertSame('2026-11-11T09:00:00Z', $this->repository->get($id)->updatedAt()->toIso8601());
+    }
+
+    public function testACopyReadAgainAfterTheOtherWriterCanBeSaved(): void
+    {
+        $this->repository->save(ContractSamples::account(1));
+        $id = EmployerAccountId::fromString('account-1');
+        $first = $this->repository->get($id);
+        $first->markMandateRegistered(ContractSamples::at('2026-11-11T09:00:00Z'));
+        $this->repository->save($first);
+
+        $second = $this->anotherWriter()->get($id);
+        $second->markMandateCancelled(ContractSamples::at('2026-11-12T09:00:00Z'));
+        $this->anotherWriter()->save($second);
+        // The instance that was saved is current: it can be saved again.
+        $second->applyVerification(ContractSamples::verification(), ContractSamples::at('2026-11-13T09:00:00Z'));
+        $this->anotherWriter()->save($second);
+
+        static::assertSame(EmployerStage::MandateCancelled, $this->repository->get($id)->stage());
+        static::assertSame('2026-11-13T09:00:00Z', $this->repository->get($id)->lastCheckedAt()?->toIso8601());
+    }
+
+    public function testACopyErasedByAnotherWriterSinceItWasReadIsRefused(): void
+    {
+        $this->repository->save(ContractSamples::account(1));
+        $id = EmployerAccountId::fromString('account-1');
+        $stale = $this->repository->get($id);
+        $stale->markMandateRegistered(ContractSamples::at('2026-11-11T09:00:00Z'));
+        $this->anotherWriter()->delete($id);
+
+        $this->assertSaveIsRefusedAsConcurrent($stale);
+        $this->expectException(RecordNotFound::class);
+        $this->repository->get($id);
+    }
+
+    public function testACopyFoundByAQueryIsCheckedLikeACopyReadById(): void
+    {
+        $this->repository->save(ContractSamples::account(1));
+        $tenant = ContractSamples::tenant();
+        $found = [
+            $this->repository->findByEmployerNumber($tenant, ContractSamples::employerNumber(1)),
+            $this->repository->findByExternalReference($tenant, ExternalReference::fromString('employer-1')),
+            $this->repository->findLeastRecentlyChecked($tenant, 10)[0] ?? null,
+        ];
+        $other = $this->anotherWriter()->get(EmployerAccountId::fromString('account-1'));
+        $other->markMandateRegistered(ContractSamples::at('2026-11-11T09:00:00Z'));
+        $this->anotherWriter()->save($other);
+
+        foreach ($found as $stale) {
+            static::assertNotNull($stale);
+            $this->assertSaveIsRefusedAsConcurrent($stale);
+        }
+    }
+
+    private function assertSaveIsRefusedAsConcurrent(EmployerAccount $stale): void
+    {
+        try {
+            $this->repository->save($stale);
+            static::fail('Expected a violation.');
+        } catch (InvariantViolation $exception) {
+            static::assertSame('employer_account.concurrent_modification', $exception->violationCode());
+        }
     }
 }

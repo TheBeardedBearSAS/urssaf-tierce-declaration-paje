@@ -86,7 +86,7 @@ ADR 0000 §4 ("factories collect every violation of a draft at once") is not in 
 own and the aggregates collect only the range violations of their own fields (nested results are not prefixed). The
 single-shot entry point (raw host input to aggregates, nested paths such as `common.hours`, using the raw parsing API of
 `Validation\ViolationCollector`: `required()`, `optional()`, `requiredInteger()`, `requiredBool()`, `merge()`) belongs to
-step 4 below, with the Application commands.
+step 4 below, with the Application commands; the factories are in `Domain\*\Input` (ADR 0000, amendment lot 4b).
 
 ## Order of work
 

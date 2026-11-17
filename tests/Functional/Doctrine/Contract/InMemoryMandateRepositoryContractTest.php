@@ -19,4 +19,9 @@ final class InMemoryMandateRepositoryContractTest extends TestCase
     {
         return new InMemoryMandateRepository();
     }
+
+    protected function anotherWriter(): MandateRepository
+    {
+        return $this->repository;
+    }
 }

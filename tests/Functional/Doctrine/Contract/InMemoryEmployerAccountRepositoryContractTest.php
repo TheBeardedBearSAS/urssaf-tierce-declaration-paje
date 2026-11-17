@@ -19,4 +19,9 @@ final class InMemoryEmployerAccountRepositoryContractTest extends TestCase
     {
         return new InMemoryEmployerAccountRepository();
     }
+
+    protected function anotherWriter(): EmployerAccountRepository
+    {
+        return $this->repository;
+    }
 }

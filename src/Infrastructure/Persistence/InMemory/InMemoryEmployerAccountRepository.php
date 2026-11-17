@@ -22,11 +22,28 @@ use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Shared\TenantId;
  * once saved and the events pending on the caller's instance are never consumed.
  *
  * Insertion order is kept for ties.
+ *
+ * Optimistic concurrency: see {@see VersionTokens}. Saving a copy another writer changed since it was read is refused
+ * (a never-read instance is refused too when the identifier is already stored).
+ *
+ * One method per query of the port plus the uniqueness and version helpers, hence the method count.
+ *
+ * @mago-expect lint:too-many-methods
  */
 final class InMemoryEmployerAccountRepository implements EmployerAccountRepository
 {
     /** @var array<string, EmployerAccount> stored snapshots by account id, in insertion order */
     private array $accounts = [];
+
+    private readonly VersionTokens $versions;
+
+    public function __construct()
+    {
+        $this->versions = new VersionTokens(
+            EmployerAccountRepository::CONCURRENT_MODIFICATION,
+            'The employer account was changed by another writer since it was read.',
+        );
+    }
 
     /**
      * Copies of every stored account (monitoring, tests).
@@ -35,20 +52,24 @@ final class InMemoryEmployerAccountRepository implements EmployerAccountReposito
      */
     public function all(): array
     {
-        return Selection::of($this->accounts)->copies();
+        return Selection::of($this->accounts)->copies($this->adopt(...));
     }
 
     /**
-     * @throws InvariantViolation "employer_account.duplicate_employer_number" or
+     * @throws InvariantViolation "employer_account.concurrent_modification" (saved by another writer, or erased, since
+     *                            this instance was read), "employer_account.duplicate_employer_number" or
      *                            "employer_account.duplicate_external_reference"
      */
     #[Override]
     public function save(EmployerAccount $account): void
     {
+        $id = $account->id()->value();
+        $this->versions->assertCurrent($account, $id);
         $this->assertUnique($account);
         $snapshot = clone $account;
         $snapshot->releaseEvents();
-        $this->accounts[$account->id()->value()] = $snapshot;
+        $this->accounts[$id] = $snapshot;
+        $this->versions->saved($account, $id);
     }
 
     #[Override]
@@ -56,7 +77,7 @@ final class InMemoryEmployerAccountRepository implements EmployerAccountReposito
     {
         $stored = $this->accounts[$id->value()] ?? throw RecordNotFound::withIdentifier('employer_account', $id->value());
 
-        return clone $stored;
+        return $this->versions->track(clone $stored, $id->value());
     }
 
     #[Override]
@@ -67,7 +88,7 @@ final class InMemoryEmployerAccountRepository implements EmployerAccountReposito
                 static fn(EmployerAccount $account): bool => $account->tenantId()->equals($tenantId)
                     && $account->employerNumber()->equals($employerNumber),
             )
-            ->copies()[0] ?? null;
+            ->copies($this->adopt(...))[0] ?? null;
     }
 
     #[Override]
@@ -78,7 +99,7 @@ final class InMemoryEmployerAccountRepository implements EmployerAccountReposito
                 static fn(EmployerAccount $account): bool => $account->tenantId()->equals($tenantId)
                     && $account->externalReference()->equals($externalReference),
             )
-            ->copies()[0] ?? null;
+            ->copies($this->adopt(...))[0] ?? null;
     }
 
     #[Override]
@@ -93,7 +114,7 @@ final class InMemoryEmployerAccountRepository implements EmployerAccountReposito
                 ),
             )
             ->limit($limit)
-            ->copies();
+            ->copies($this->adopt(...));
     }
 
     #[Override]
@@ -117,6 +138,12 @@ final class InMemoryEmployerAccountRepository implements EmployerAccountReposito
     public function delete(EmployerAccountId $id): void
     {
         unset($this->accounts[$id->value()]);
+        $this->versions->forget($id->value());
+    }
+
+    private function adopt(EmployerAccount $copy): EmployerAccount
+    {
+        return $this->versions->track($copy, $copy->id()->value());
     }
 
     private function assertUnique(EmployerAccount $account): void

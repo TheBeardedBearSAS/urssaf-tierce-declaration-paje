@@ -27,7 +27,10 @@ interface Outbox
     public function markDispatched(OutboxEntry $entry, Instant $at): void;
 
     /**
-     * Keeps the entry pending, with one more failed attempt and the failure message.
+     * Keeps the entry pending, with one more failed attempt and the failure description.
+     *
+     * The description is the class and the code of the exception the sink threw, never its message: a host sink may put
+     * personal data in it (ADR 0007). Implementations store it as given and must not log it with more context.
      */
     public function markFailed(OutboxEntry $entry, string $error): void;
 

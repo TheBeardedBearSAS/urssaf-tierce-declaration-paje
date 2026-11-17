@@ -114,3 +114,35 @@ implements them. An amendment is appended to the ADR it changes, dated and marke
   query birth date) and for the domain test builders (`tests/Unit/Domain/*Test.php`, `*Samples.php`), so that each test
   names only what it varies. The reference has no such ignore; production code outside the three files is not
   concerned (justified in `phpstan.neon.dist`).
+
+## Amendment (2026-11-17, lead-accepted, lot 4b)
+
+- Item 4 is implemented by factories in `Domain\{Employer,Employee,Child,Declaration,Estimate}\Input`, one per aggregate
+  family, with the same three entry points: `validate(array)` returns every violation (warnings included),
+  `fromInput(array)` returns the aggregate or throws `ValidationFailed` with all of them. There is no draft class: the raw
+  input is an `array` as a host, a JSON body or the console gives it.
+- The input keys and the violation paths are the same English snake_case names (`common.hours`,
+  `children[0].last_name`, `contract_end.notice_indemnity`); the camelCase paths of the aggregates are translated to them
+  (`netMonthlySalary` becomes `net_monthly_salary`, `consecutive24hDays` becomes `consecutive_24h_days`). The shared
+  reader is `Validation\RawFields` (internal): text is a string or an integer, an integer is an integer or a digit
+  string, a boolean is a boolean or "1" / "0" / "true" / "false", a decimal is text (a float is refused); any other type
+  reports `<key>.invalid_type`, never a `TypeError`. A null or empty value is missing.
+- The rules stay in the value objects and aggregates; the factories only parse and convert their `InvalidValue` and
+  `ValidationFailed` into violations. To report every violation at once, an aggregate is built even when a required
+  part is missing or invalid, with a valid stand-in (`DeclarationPlaceholders` and constants), so that a missing
+  salary does not hide an out-of-range hours count. The object built with a stand-in is never returned.
+- The employee criteria follow the priority of api-reference §2.2 (ADR 0004): the Pajemploi number, then the NIR, then
+  the administrative data. The highest-priority criterion given is kept, every given criterion is validated, and
+  "employee_identification.empty" is reported when none is given (path `identity` for an identification, empty path,
+  so `employee`, for a declaration, which accepts the number and the NIR only). An exclusivity violation would refuse a
+  request the contract accepts (ADR 0009).
+- The activity of a declaration or an estimate is the entry point (`childminder()` / `homeCare()`, or
+  `fromInput(DeclarationActivity, array)`), never a field of the input.
+- `ChildListFactory` (operation 022) enforces no minimum: the contract publishes none. The deprecated
+  `finDeContrat.enfants` of a childminder is not accepted by `ChildminderContractEndFactory`. The non-empty
+  `EmployeeCreation::identity()` rule of an association by administrative data (ADR 0009 amendment) is the business of the
+  association use case, not of `EmployeeCreationFactory`.
+- Undocumented codes (`isDocumented()` false) are accepted without warning: ADR 0009 refuses nothing outside the Swagger.
+- Deviation: `phpstan.neon.dist` lists the test fakes that store a race-scenario closure and call it from inside the faked port
+  in `shipmonkRules.forbidCheckedExceptionInCallable.allowedCheckedExceptionCallables` (test code only, never `src/`; the
+  closure's exception is the scenario).

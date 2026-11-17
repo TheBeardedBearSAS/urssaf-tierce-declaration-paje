@@ -98,7 +98,7 @@ final class UnitOfWorkOutboxTest extends TestCase
                 throw new RuntimeException('failure');
             });
         } finally {
-            static::assertSame(['begin', 'rollback'], $journal->entries());
+            static::assertSame(['begin', 'failed'], $journal->entries());
         }
     }
 

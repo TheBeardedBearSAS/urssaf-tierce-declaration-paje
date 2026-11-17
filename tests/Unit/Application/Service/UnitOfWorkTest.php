@@ -57,7 +57,7 @@ final class UnitOfWorkTest extends TestCase
             });
         } finally {
             static::assertSame([], $publisher->events());
-            static::assertSame(['begin', 'rollback'], $journal->entries());
+            static::assertSame(['begin', 'failed'], $journal->entries());
         }
     }
 

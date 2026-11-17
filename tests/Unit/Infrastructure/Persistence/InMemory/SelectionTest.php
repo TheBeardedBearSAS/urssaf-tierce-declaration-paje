@@ -74,7 +74,7 @@ final class SelectionTest extends TestCase
     {
         $a = self::item('a');
 
-        $copies = Selection::of([$a])->copies();
+        $copies = Selection::of([$a])->copies(static fn(SelectionItem $copy): SelectionItem => $copy);
 
         static::assertCount(1, $copies);
         static::assertNotSame($a, $copies[0]);

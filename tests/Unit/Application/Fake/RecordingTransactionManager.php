@@ -8,6 +8,11 @@ use Override;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Application\Port\TransactionManager;
 use Throwable;
 
+/**
+ * Journal-only transaction fake: it writes "begin", then "commit" or "failed" in the journal and restores nothing. "failed"
+ * means that the operation threw, not that anything was rolled back: use {@see SnapshottingTransactionManager} to test a
+ * rollback.
+ */
 final class RecordingTransactionManager implements TransactionManager
 {
     private int $committed = 0;
@@ -31,7 +36,7 @@ final class RecordingTransactionManager implements TransactionManager
         try {
             $result = $operation();
         } catch (Throwable $exception) {
-            $this->journal->add('rollback');
+            $this->journal->add('failed');
 
             throw $exception;
         }

@@ -33,6 +33,12 @@ trait DeclarationRecordRepositoryContract
     abstract protected function createRepository(): DeclarationRecordRepository;
 
     /**
+     * An independent writer over the same store: another process, another EntityManager. The in-memory adapter has one
+     * store per repository and returns the repository itself. Competing copies are read, and saved, through it.
+     */
+    abstract protected function anotherWriter(): DeclarationRecordRepository;
+
+    /**
      * The transaction manager of the storage (the supersede scenario deletes and inserts in one transaction).
      */
     abstract protected function transactions(): TransactionManager;
@@ -475,5 +481,90 @@ trait DeclarationRecordRepositoryContract
         $this->repository->save(ContractSamples::recordOfReference(1, 2, DeclarationState::Declared));
 
         static::assertSame('record-2', $this->repository->findByExternalReference(ContractSamples::tenant(), ExternalReference::fromString('declaration-1'))?->id()->value());
+    }
+
+    public function testACopyChangedByAnotherWriterSinceItWasReadIsRefused(): void
+    {
+        $this->repository->save(ContractSamples::record(1, DeclarationState::Submitting));
+        $id = DeclarationRecordId::fromString('record-1');
+        $first = $this->repository->get($id);
+        $second = $this->anotherWriter()->get($id);
+        $first->markOutcomeUnknown(OutcomeUnknownReason::StaleSubmission, [], ContractSamples::at('2026-11-11T09:00:00Z'));
+        $second->markFailed([SubmissionError::of('urssaf.unavailable', 'technical', 'Down.', null)], ContractSamples::at('2026-11-12T09:00:00Z'));
+        $this->repository->save($first);
+
+        $this->assertSaveIsRefusedAsConcurrent($second, $this->anotherWriter());
+        static::assertSame(DeclarationState::OutcomeUnknown, $this->repository->get($id)->state());
+    }
+
+    public function testACopyReadBeforeAClaimIsRefused(): void
+    {
+        $this->repository->save(ContractSamples::record(1, DeclarationState::Pending));
+        $id = DeclarationRecordId::fromString('record-1');
+        $stale = $this->repository->get($id);
+        static::assertTrue($this->anotherWriter()->claimForSubmission($id, ContractSamples::at('2026-11-12T10:00:00Z')));
+        $stale->startSubmission(ContractSamples::at('2026-11-12T10:00:01Z'));
+
+        $this->assertSaveIsRefusedAsConcurrent($stale, $this->repository);
+        static::assertSame(DeclarationState::Submitting, $this->repository->get($id)->state());
+        static::assertSame('2026-11-12T10:00:00Z', $this->repository->get($id)->lastAttemptAt()?->toIso8601());
+    }
+
+    public function testACopyReadAfterTheClaimCanBeSavedAndSavedAgain(): void
+    {
+        $this->repository->save(ContractSamples::record(1, DeclarationState::Pending));
+        $id = DeclarationRecordId::fromString('record-1');
+        static::assertTrue($this->repository->claimForSubmission($id, ContractSamples::at('2026-11-12T10:00:00Z')));
+
+        $claimed = $this->repository->get($id);
+        $claimed->markFailed([SubmissionError::of('urssaf.unavailable', 'technical', 'Down.', null)], ContractSamples::at('2026-11-12T10:00:05Z'));
+        $this->repository->save($claimed);
+        $claimed->retry(ContractSamples::at('2026-11-12T10:00:06Z'));
+        $this->repository->save($claimed);
+
+        static::assertSame(DeclarationState::Pending, $this->repository->get($id)->state());
+    }
+
+    public function testACopyErasedByAnotherWriterSinceItWasReadIsRefused(): void
+    {
+        $this->repository->save(ContractSamples::record(1, DeclarationState::Submitting));
+        $id = DeclarationRecordId::fromString('record-1');
+        $stale = $this->repository->get($id);
+        $stale->markOutcomeUnknown(OutcomeUnknownReason::StaleSubmission, [], ContractSamples::at('2026-11-11T09:00:00Z'));
+        $this->anotherWriter()->delete($id);
+
+        $this->assertSaveIsRefusedAsConcurrent($stale, $this->repository);
+        $this->expectException(RecordNotFound::class);
+        $this->repository->get($id);
+    }
+
+    public function testACopyFoundByAQueryIsCheckedLikeACopyReadById(): void
+    {
+        $this->repository->save(ContractSamples::record(1, DeclarationState::Submitting));
+        $tenant = ContractSamples::tenant();
+        $found = [
+            $this->repository->findByExternalReference($tenant, ExternalReference::fromString('declaration-1')),
+            $this->repository->findByState($tenant, DeclarationState::Submitting, 10)[0] ?? null,
+            $this->repository->findStaleSubmissions(ContractSamples::at('2026-12-01T00:00:00Z'), 10)[0] ?? null,
+        ];
+        $other = $this->anotherWriter()->get(DeclarationRecordId::fromString('record-1'));
+        $other->markOutcomeUnknown(OutcomeUnknownReason::StaleSubmission, [], ContractSamples::at('2026-11-11T09:00:00Z'));
+        $this->anotherWriter()->save($other);
+
+        foreach ($found as $stale) {
+            static::assertNotNull($stale);
+            $this->assertSaveIsRefusedAsConcurrent($stale, $this->repository);
+        }
+    }
+
+    private function assertSaveIsRefusedAsConcurrent(DeclarationRecord $stale, DeclarationRecordRepository $writer): void
+    {
+        try {
+            $writer->save($stale);
+            static::fail('Expected a violation.');
+        } catch (InvariantViolation $exception) {
+            static::assertSame('declaration_record.concurrent_modification', $exception->violationCode());
+            static::assertSame(DeclarationRecordRepository::CONCURRENT_MODIFICATION, $exception->violationCode());
+        }
     }
 }

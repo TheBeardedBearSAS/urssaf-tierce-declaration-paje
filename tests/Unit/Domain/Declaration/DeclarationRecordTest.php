@@ -218,6 +218,48 @@ final class DeclarationRecordTest extends TestCase
         static::assertEquals(RecordSamples::later(2)->toDateTimeImmutable(), $event->occurredAt());
     }
 
+    public function testMarkDeclaredIsTheLateAcceptanceOfAnUnknownOutcomeWithTheWholeResultWithoutChildChecks(): void
+    {
+        $record = self::unknown();
+        $result = RecordSamples::result();
+
+        $record->markDeclared($result, RecordSamples::later(3));
+
+        static::assertSame(DeclarationState::Declared, $record->state());
+        $kept = $record->result();
+        static::assertNotNull($kept);
+        static::assertSame('REF-001', $kept->documentReference());
+        static::assertSame($result->amounts(), $kept->amounts());
+        static::assertTrue($kept->isPajemploiPlus());
+        static::assertSame($result->transferDate(), $kept->transferDate());
+        static::assertSame([], $kept->childChecks());
+        static::assertSame($result->messages(), $kept->messages());
+        static::assertSame([], $record->errors());
+        static::assertNull($record->outcomeUnknownReason());
+        $events = $record->releaseEvents();
+        static::assertCount(1, $events);
+        $event = $events[0];
+        static::assertInstanceOf(DeclarationDeclared::class, $event);
+        static::assertSame('REF-001', $event->documentReference());
+        static::assertSame(['ER_API_DECLA_00007', 'W2'], $event->nonBlockingCodes());
+        static::assertEquals(RecordSamples::later(3)->toDateTimeImmutable(), $event->occurredAt());
+    }
+
+    public function testMarkDeclaredKeepsTheFirstResultOfADeclaredRecord(): void
+    {
+        $record = self::submitting();
+        $record->markDeclared(RecordSamples::result('REF-FIRST'), RecordSamples::later(2));
+        $record->releaseEvents();
+
+        RecordSamples::assertInvalidTransition(
+            static fn() => $record->markDeclared(RecordSamples::result('REF-SECOND'), RecordSamples::later(3)),
+            'declared',
+            'declared',
+        );
+        static::assertSame('REF-FIRST', $record->result()?->documentReference());
+        static::assertSame([], $record->releaseEvents());
+    }
+
     public function testMarkRejectedKeepsTheErrors(): void
     {
         $record = self::submitting();
@@ -462,22 +504,22 @@ final class DeclarationRecordTest extends TestCase
         static::assertSame([], $record->releaseEvents());
     }
 
-    public function testFinalStatesRefuseEveryCommand(): void
+    public function testADeclaredRecordRefusesEveryCommand(): void
     {
         $record = self::submitting();
-        $record->markRejected(RecordSamples::errors(), RecordSamples::later(2));
+        $record->markDeclared(RecordSamples::result(), RecordSamples::later(2));
         $record->releaseEvents();
         $now = RecordSamples::later(3);
 
-        RecordSamples::assertInvalidTransition(static fn() => $record->startSubmission($now), 'rejected', 'submitting');
-        RecordSamples::assertInvalidTransition(static fn() => $record->markDeclared(RecordSamples::result(), $now), 'rejected', 'declared');
-        RecordSamples::assertInvalidTransition(static fn() => $record->markRejected(RecordSamples::errors(), $now), 'rejected', 'rejected');
-        RecordSamples::assertInvalidTransition(static fn() => $record->markAlreadyDeclared(RecordSamples::errors(), $now), 'rejected', 'already_declared');
-        RecordSamples::assertInvalidTransition(static fn() => $record->markOutcomeUnknown(OutcomeUnknownReason::StaleSubmission, [], $now), 'rejected', 'outcome_unknown');
-        RecordSamples::assertInvalidTransition(static fn() => $record->markFailed([], $now), 'rejected', 'error');
-        RecordSamples::assertInvalidTransition(static fn() => $record->markInvalidCredentials($now), 'rejected', 'invalid_credentials');
-        RecordSamples::assertInvalidTransition(static fn() => $record->retry($now), 'rejected', 'pending');
-        static::assertSame(DeclarationState::Rejected, $record->state());
+        RecordSamples::assertInvalidTransition(static fn() => $record->startSubmission($now), 'declared', 'submitting');
+        RecordSamples::assertInvalidTransition(static fn() => $record->markDeclared(RecordSamples::result(), $now), 'declared', 'declared');
+        RecordSamples::assertInvalidTransition(static fn() => $record->markRejected(RecordSamples::errors(), $now), 'declared', 'rejected');
+        RecordSamples::assertInvalidTransition(static fn() => $record->markAlreadyDeclared(RecordSamples::errors(), $now), 'declared', 'already_declared');
+        RecordSamples::assertInvalidTransition(static fn() => $record->markOutcomeUnknown(OutcomeUnknownReason::StaleSubmission, [], $now), 'declared', 'outcome_unknown');
+        RecordSamples::assertInvalidTransition(static fn() => $record->markFailed([], $now), 'declared', 'error');
+        RecordSamples::assertInvalidTransition(static fn() => $record->markInvalidCredentials($now), 'declared', 'invalid_credentials');
+        RecordSamples::assertInvalidTransition(static fn() => $record->retry($now), 'declared', 'pending');
+        static::assertSame(DeclarationState::Declared, $record->state());
         static::assertSame([], $record->releaseEvents());
         static::assertEquals(RecordSamples::later(2), $record->updatedAt());
     }

@@ -9,6 +9,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Use cases: track / import employers, register / import / cancel / record mandates, verify employer, employee and
+  children, associate an employee, estimate contributions, pre-declare and declare a salary (AMA / GED), reconcile and
+  resolve unknown outcomes, requeue after invalid credentials, relay and purge the outbox, forget an employer, workflow
+  overview. Declarations follow a settlement table (`docs/workflow.md`, ADR 0006): an accepted 050 / 051 answer is
+  never discarded nor resent, repository saves are protected by optimistic concurrency, and only
+  `MandateRecordingFailed` / `DeclarationRecordingFailed` signal an accepted call that could not be recorded.
+- Draft and factory layer: raw host input validated in one pass with nested violation paths.
+- `Testing\SimulatedPajeGateway` (in-memory platform for host tests, refused in production) and the framework-free
+  `Standalone` builder (`docs/standalone.md`); README quick start.
 - Local lifecycles: `EmployerAccount` (last 020 snapshot, stage), `Mandate` (registered / cancelled, registered or
   imported) and `DeclarationRecord` (pending → submitting → declared / rejected / already declared / outcome unknown /
   error / invalid credentials) with a personal-data-free fingerprint; repositories, domain events, `UnitOfWork` with an

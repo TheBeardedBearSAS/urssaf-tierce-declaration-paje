@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Unit\Infrastructure\Persistence\InMemory;
 
 use PHPUnit\Framework\TestCase;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Exception\InvariantViolation;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Mandate\Mandate;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Mandate\MandateId;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Mandate\MandateState;
@@ -83,5 +84,45 @@ final class InMemoryMandateRepositoryTest extends TestCase
         $this->repository->save(ContractSamples::mandateOfEmployer(1, 2, MandateState::Cancelled));
 
         static::assertCount(2, $this->repository->all());
+    }
+
+    public function testANeverReadInstanceCannotOverwriteAStoredMandate(): void
+    {
+        $this->repository->save(ContractSamples::mandate(1));
+
+        $this->assertConcurrentModification(ContractSamples::mandate(1));
+    }
+
+    public function testACopyOfAnErasedMandateCannotBeSavedButTheIdentifierCanBeCreatedAgain(): void
+    {
+        $this->repository->save(ContractSamples::mandate(1));
+        $id = MandateId::fromString('mandate-1');
+        $copy = $this->repository->get($id);
+        $this->repository->delete($id);
+
+        $this->assertConcurrentModification($copy);
+        $this->repository->save(ContractSamples::mandate(1));
+
+        static::assertSame(['mandate-1'], array_map(static fn(Mandate $mandate): string => $mandate->id()->value(), $this->repository->all()));
+    }
+
+    public function testTheCopiesOfAllAreCheckedLikeAnyOtherRead(): void
+    {
+        $this->repository->save(ContractSamples::mandate(1));
+        $copy = $this->repository->all()[0];
+        $this->repository->save($this->repository->get($copy->id()));
+
+        $this->assertConcurrentModification($copy);
+    }
+
+    private function assertConcurrentModification(Mandate $mandate): void
+    {
+        try {
+            $this->repository->save($mandate);
+            static::fail('Expected a violation.');
+        } catch (InvariantViolation $exception) {
+            static::assertSame('mandate.concurrent_modification', $exception->violationCode());
+            static::assertSame([], $exception->params());
+        }
     }
 }

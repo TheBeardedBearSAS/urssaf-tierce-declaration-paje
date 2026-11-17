@@ -26,4 +26,9 @@ final class InMemoryDeclarationRecordRepositoryContractTest extends TestCase
     {
         return new ImmediateTransactionManager();
     }
+
+    protected function anotherWriter(): DeclarationRecordRepository
+    {
+        return $this->repository;
+    }
 }

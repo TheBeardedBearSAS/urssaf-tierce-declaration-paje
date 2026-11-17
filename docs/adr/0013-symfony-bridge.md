@@ -39,3 +39,13 @@ status polling; several URSSAF packages can be installed in one application; som
 ## Consequences
 
 - Documented in `docs/symfony.md` and `docs/testing.md`.
+
+## Amendment (2026-11-17, lead-accepted, lot 4b)
+
+- **Simulator guard without a framework:** the layer rules forbid `Standalone` to depend on `Testing`, so the standalone
+  builder cannot recognise `Testing\SimulatedPajeGateway`. `UrssafTierceDeclarationPajeBuilder::withGateway()` therefore refuses
+  **any** custom `PajeGateway` with `Environment::Production` (`LogicException`, at the call, so before any use); a host that
+  needs a decorated gateway in production wires the handlers itself (docs/standalone.md, manual wiring). The bundle guard
+  above (item 8) is unchanged.
+- **Logger:** the standalone `withLogger()` reaches the HTTP gateway only: no `FailureReporter` backed by a PSR logger exists yet,
+  so a failure of the event publication after a commit is ignored unless the host's `EventPublisher` reports it.

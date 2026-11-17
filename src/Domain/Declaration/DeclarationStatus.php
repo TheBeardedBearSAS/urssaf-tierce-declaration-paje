@@ -80,14 +80,13 @@ final readonly class DeclarationStatus
     }
 
     /**
-     * submitting -> declared (050 / 051 succeeded): stores the result, clears the errors.
+     * submitting -> declared (050 / 051 succeeded), or the late acceptance of an answer that arrives on another state
+     * (see {@see DeclarationState}): stores the result, clears the errors and the reason of an unknown outcome.
      *
-     * @throws InvalidStateTransition
+     * @throws InvalidStateTransition from declared (the first result is kept)
      */
     public function declared(DeclarationResult $result, Instant $now): self
     {
-        $this->assertState(DeclarationState::Submitting, DeclarationState::Declared);
-
         return $this->moved(DeclarationState::Declared, $now, [], $result);
     }
 

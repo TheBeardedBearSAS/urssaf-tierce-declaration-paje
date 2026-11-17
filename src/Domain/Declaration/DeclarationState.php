@@ -12,6 +12,10 @@ use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Exception\InvalidStateTran
  * pending -> submitting -> declared | rejected | already_declared (final)
  *                       -> outcome_unknown -> declared (manual, referenceDocumentaire read) | pending (manual, not received)
  *                       -> error (proven not sent) | invalid_credentials -> pending (retry / requeue)
+ *
+ * Late acceptance (ADR 0006, settlement table): an accepted 050 / 051 is never discarded, so "declared" is also reachable
+ * from every state but declared itself (a call whose record meanwhile became pending, error, invalid_credentials,
+ * outcome_unknown, rejected, already_declared or was claimed again). Only declared is a dead end.
  */
 enum DeclarationState: string
 {
@@ -30,7 +34,7 @@ enum DeclarationState: string
     public function allowedTransitions(): array
     {
         return match ($this) {
-            self::Pending => [self::Submitting],
+            self::Pending => [self::Submitting, self::Declared],
             self::Submitting => [
                 self::Declared,
                 self::Rejected,
@@ -40,8 +44,9 @@ enum DeclarationState: string
                 self::InvalidCredentials,
             ],
             self::OutcomeUnknown => [self::Declared, self::Pending],
-            self::Error, self::InvalidCredentials => [self::Pending],
-            self::Declared, self::Rejected, self::AlreadyDeclared => [],
+            self::Error, self::InvalidCredentials => [self::Pending, self::Declared],
+            self::Rejected, self::AlreadyDeclared => [self::Declared],
+            self::Declared => [],
         };
     }
 
@@ -62,8 +67,12 @@ enum DeclarationState: string
         return $target;
     }
 
+    /**
+     * True for the states no operator or retry leaves: declared, rejected and already_declared (the only way out of the
+     * last two is the late acceptance of a call that was in flight, never a decision).
+     */
     public function isFinal(): bool
     {
-        return $this->allowedTransitions() === [];
+        return \in_array($this, [self::Declared, self::Rejected, self::AlreadyDeclared], true);
     }
 }

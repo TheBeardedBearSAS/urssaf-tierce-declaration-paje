@@ -17,7 +17,7 @@ final class DeclarationStateTest extends TestCase
      */
     public static function transitions(): iterable
     {
-        yield 'pending' => [DeclarationState::Pending, [DeclarationState::Submitting]];
+        yield 'pending' => [DeclarationState::Pending, [DeclarationState::Submitting, DeclarationState::Declared]];
         yield 'submitting' => [DeclarationState::Submitting, [
             DeclarationState::Declared,
             DeclarationState::Rejected,
@@ -27,11 +27,11 @@ final class DeclarationStateTest extends TestCase
             DeclarationState::InvalidCredentials,
         ]];
         yield 'outcome_unknown' => [DeclarationState::OutcomeUnknown, [DeclarationState::Declared, DeclarationState::Pending]];
-        yield 'error' => [DeclarationState::Error, [DeclarationState::Pending]];
-        yield 'invalid_credentials' => [DeclarationState::InvalidCredentials, [DeclarationState::Pending]];
+        yield 'error' => [DeclarationState::Error, [DeclarationState::Pending, DeclarationState::Declared]];
+        yield 'invalid_credentials' => [DeclarationState::InvalidCredentials, [DeclarationState::Pending, DeclarationState::Declared]];
         yield 'declared' => [DeclarationState::Declared, []];
-        yield 'rejected' => [DeclarationState::Rejected, []];
-        yield 'already_declared' => [DeclarationState::AlreadyDeclared, []];
+        yield 'rejected' => [DeclarationState::Rejected, [DeclarationState::Declared]];
+        yield 'already_declared' => [DeclarationState::AlreadyDeclared, [DeclarationState::Declared]];
     }
 
     /**
@@ -41,7 +41,7 @@ final class DeclarationStateTest extends TestCase
     public function testEveryTransitionOfTheAdr(DeclarationState $from, array $allowed): void
     {
         static::assertSame($allowed, $from->allowedTransitions());
-        static::assertSame($allowed === [], $from->isFinal());
+        static::assertSame(\in_array($from, [DeclarationState::Declared, DeclarationState::Rejected, DeclarationState::AlreadyDeclared], true), $from->isFinal());
         foreach (DeclarationState::cases() as $target) {
             $expected = \in_array($target, $allowed, true);
             static::assertSame($expected, $from->canTransitionTo($target));

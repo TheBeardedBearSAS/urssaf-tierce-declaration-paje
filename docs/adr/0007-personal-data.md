@@ -45,3 +45,12 @@ exception messages"). The reference documents encryption at rest as a recipe (DB
   birth date column uses the same encryptable DBAL type as the employer one (ADR 0014).
 - URSSAF error **messages** are masked like descriptions (templates such as `[PERIODE1_MONO]` are filled with host
   values). Outbox failures store the exception class and code only, never the raw message of a host sink exception.
+
+## Amendment (2026-11-17, lead-accepted, lot 4b)
+
+- `SubmissionError` masks its `message` like its `description` (`#[SensitiveParameter]`, `__debugInfo`): URSSAF messages are
+  templates filled with host values. The read model `SubmissionErrorView` masks both too.
+- `DeclarationSnapshotView` (and every declaration view) leaves the employer number out (credential-like); an employee number
+  given by the host is masked in debug output.
+- `DeclarationRecordingFailed` (ADR 0006) carries the `referenceDocumentaire` of the accepted answer, which is not personal data,
+  and the record id; it never carries the employer number, the declaration or a foreign exception message.

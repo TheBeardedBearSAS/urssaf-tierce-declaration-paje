@@ -29,6 +29,12 @@ trait MandateRepositoryContract
 
     abstract protected function createRepository(): MandateRepository;
 
+    /**
+     * An independent writer over the same store: another process, another EntityManager. The in-memory adapter has one
+     * store per repository and returns the repository itself. Competing copies are read, and saved, through it.
+     */
+    abstract protected function anotherWriter(): MandateRepository;
+
     protected function setUp(): void
     {
         $this->repository = $this->createRepository();
@@ -220,5 +226,83 @@ trait MandateRepositoryContract
         static::assertSame(['mandate-3'], self::mandateIds($this->repository->findByEmployer(ContractSamples::tenant(), ContractSamples::employerNumber(2))));
         static::assertSame(['mandate-4'], self::mandateIds($this->repository->findByEmployer(ContractSamples::tenant(ContractSamples::OTHER_TENANT), ContractSamples::employerNumber(1))));
         static::assertSame('mandate-2', $this->repository->findActive(ContractSamples::tenant(), ContractSamples::employerNumber(1))?->id()->value());
+    }
+
+    public function testACopyChangedByAnotherWriterSinceItWasReadIsRefused(): void
+    {
+        $this->repository->save(ContractSamples::mandate(1));
+        $id = MandateId::fromString('mandate-1');
+        $first = $this->repository->get($id);
+        $second = $this->anotherWriter()->get($id);
+        $first->cancel(ContractSamples::at('2026-11-11T09:00:00Z'));
+        $second->cancel(ContractSamples::at('2026-11-12T09:00:00Z'));
+        $this->repository->save($first);
+
+        try {
+            $this->anotherWriter()->save($second);
+            static::fail('Expected a violation.');
+        } catch (InvariantViolation $exception) {
+            static::assertSame('mandate.concurrent_modification', $exception->violationCode());
+            static::assertSame(MandateRepository::CONCURRENT_MODIFICATION, $exception->violationCode());
+        }
+        static::assertSame('2026-11-11T09:00:00Z', $this->repository->get($id)->cancelledAt()?->toIso8601());
+    }
+
+    public function testACopyReadAgainAfterTheOtherWriterCanBeSavedAndSavedAgain(): void
+    {
+        $this->repository->save(ContractSamples::mandate(1));
+        $id = MandateId::fromString('mandate-1');
+        $first = $this->repository->get($id);
+        $this->repository->save($first);
+
+        $second = $this->anotherWriter()->get($id);
+        $second->cancel(ContractSamples::at('2026-11-12T09:00:00Z'));
+        $this->anotherWriter()->save($second);
+        $this->anotherWriter()->save($second);
+
+        static::assertSame(MandateState::Cancelled, $this->repository->get($id)->state());
+    }
+
+    public function testACopyErasedByAnotherWriterSinceItWasReadIsRefused(): void
+    {
+        $this->repository->save(ContractSamples::mandate(1));
+        $id = MandateId::fromString('mandate-1');
+        $stale = $this->repository->get($id);
+        $stale->cancel(ContractSamples::at('2026-11-11T09:00:00Z'));
+        $this->anotherWriter()->delete($id);
+
+        try {
+            $this->repository->save($stale);
+            static::fail('Expected a violation.');
+        } catch (InvariantViolation $exception) {
+            static::assertSame('mandate.concurrent_modification', $exception->violationCode());
+        }
+        $this->expectException(RecordNotFound::class);
+        $this->repository->get($id);
+    }
+
+    public function testACopyFoundByAQueryIsCheckedLikeACopyReadById(): void
+    {
+        $this->repository->save(ContractSamples::mandate(1));
+        $tenant = ContractSamples::tenant();
+        $employerNumber = ContractSamples::employerNumber(1);
+        $found = [
+            $this->repository->findActive($tenant, $employerNumber),
+            $this->repository->findByEmployer($tenant, $employerNumber)[0] ?? null,
+        ];
+        $other = $this->anotherWriter()->get(MandateId::fromString('mandate-1'));
+        $other->cancel(ContractSamples::at('2026-11-11T09:00:00Z'));
+        $this->anotherWriter()->save($other);
+
+        foreach ($found as $stale) {
+            static::assertNotNull($stale);
+
+            try {
+                $this->repository->save($stale);
+                static::fail('Expected a violation.');
+            } catch (InvariantViolation $exception) {
+                static::assertSame('mandate.concurrent_modification', $exception->violationCode());
+            }
+        }
     }
 }

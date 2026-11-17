@@ -151,4 +151,61 @@ final class InMemoryDeclarationRecordRepositoryTest extends TestCase
         static::assertSame(0, $this->repository->countByState(ContractSamples::tenant())['error']);
         static::assertSame(1, $this->repository->countByState(ContractSamples::tenant(ContractSamples::OTHER_TENANT))['error']);
     }
+
+    public function testANeverReadInstanceCannotOverwriteAStoredRecord(): void
+    {
+        $this->repository->save(ContractSamples::record(1, DeclarationState::Pending));
+
+        $this->assertConcurrentModification(ContractSamples::record(1, DeclarationState::Pending));
+    }
+
+    public function testACopyOfAnErasedRecordCannotBeSavedButTheIdentifierCanBeCreatedAgain(): void
+    {
+        $this->repository->save(ContractSamples::record(1, DeclarationState::Pending));
+        $id = DeclarationRecordId::fromString('record-1');
+        $copy = $this->repository->get($id);
+        $this->repository->delete($id);
+
+        $this->assertConcurrentModification($copy);
+        $this->repository->save(ContractSamples::record(1, DeclarationState::Pending));
+
+        static::assertSame(['record-1'], array_map(static fn(DeclarationRecord $record): string => $record->id()->value(), $this->repository->all()));
+    }
+
+    public function testACopyOfARecordErasedWithItsEmployerCannotBeSavedButTheIdentifierCanBeCreatedAgain(): void
+    {
+        $this->repository->save(ContractSamples::record(1, DeclarationState::Declared));
+        $copy = $this->repository->get(DeclarationRecordId::fromString('record-1'));
+        $erased = $this->repository->deleteByEmployer(
+            ContractSamples::tenant(),
+            ContractSamples::employerNumber(1),
+            [DeclarationState::Declared],
+        );
+
+        static::assertCount(1, $erased);
+        $this->assertConcurrentModification($copy);
+        $this->repository->save(ContractSamples::record(1, DeclarationState::Declared));
+
+        static::assertCount(1, $this->repository->all());
+    }
+
+    public function testTheCopiesOfAllAreCheckedLikeAnyOtherRead(): void
+    {
+        $this->repository->save(ContractSamples::record(1, DeclarationState::Declared));
+        $copy = $this->repository->all()[0];
+        $this->repository->save($this->repository->get($copy->id()));
+
+        $this->assertConcurrentModification($copy);
+    }
+
+    private function assertConcurrentModification(DeclarationRecord $record): void
+    {
+        try {
+            $this->repository->save($record);
+            static::fail('Expected a violation.');
+        } catch (InvariantViolation $exception) {
+            static::assertSame('declaration_record.concurrent_modification', $exception->violationCode());
+            static::assertSame([], $exception->params());
+        }
+    }
 }

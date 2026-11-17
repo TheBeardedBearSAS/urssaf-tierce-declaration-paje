@@ -17,7 +17,9 @@ use TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Unit\Domain\Employer\Employ
 
 /**
  * What is specific to the in-memory repository (snapshots, orders on ties); the behaviour shared with the other
- * adapters is in the repository contract.
+ * adapters is in the repository contract. One method per scenario.
+ *
+ * @mago-expect lint:too-many-methods
  */
 final class InMemoryEmployerAccountRepositoryTest extends TestCase
 {
@@ -129,5 +131,45 @@ final class InMemoryEmployerAccountRepositoryTest extends TestCase
         $this->repository->save(EmployerSamples::account());
 
         static::assertSame('account-1', $this->repository->get(EmployerSamples::accountId())->id()->value());
+    }
+
+    public function testANeverReadInstanceCannotOverwriteAStoredAccount(): void
+    {
+        $this->repository->save(ContractSamples::account(1));
+
+        $this->assertConcurrentModification(ContractSamples::account(1));
+    }
+
+    public function testACopyOfAnErasedAccountCannotBeSavedButTheIdentifierCanBeCreatedAgain(): void
+    {
+        $this->repository->save(ContractSamples::account(1));
+        $id = EmployerAccountId::fromString('account-1');
+        $copy = $this->repository->get($id);
+        $this->repository->delete($id);
+
+        $this->assertConcurrentModification($copy);
+        $this->repository->save(ContractSamples::account(1));
+
+        static::assertSame(['account-1'], array_map(static fn(EmployerAccount $account): string => $account->id()->value(), $this->repository->all()));
+    }
+
+    public function testTheCopiesOfAllAreCheckedLikeAnyOtherRead(): void
+    {
+        $this->repository->save(ContractSamples::account(1));
+        $copy = $this->repository->all()[0];
+        $this->repository->save($this->repository->get($copy->id()));
+
+        $this->assertConcurrentModification($copy);
+    }
+
+    private function assertConcurrentModification(EmployerAccount $account): void
+    {
+        try {
+            $this->repository->save($account);
+            static::fail('Expected a violation.');
+        } catch (InvariantViolation $exception) {
+            static::assertSame('employer_account.concurrent_modification', $exception->violationCode());
+            static::assertSame([], $exception->params());
+        }
     }
 }

@@ -54,3 +54,21 @@ Status: Accepted (2026-11-17). Relates to [ADR 0000](0000-reference-architecture
 - Every response mapper of a 2xx body (020, 021, 022, 023, 040, 041, 045, 046, 050, 051) refuses a body that is not a JSON
   object (empty body, `[]`, top-level list) with `body is not a JSON object`; `{}` is accepted. On 050 / 051 this is an
   unknown outcome (ADR 0003). 030 / 031 accept a blank body or `{}` only.
+
+## Amendment (2026-11-17, lead-accepted, lot 4b)
+
+- **Settlement of the check:** when `preDeclareBeforeDeclaring()` is on, `DeclarationSubmitter` calls 045 / 046 right after
+  the claim and settles a failure like the answer of 050 / 051 (ADR 0003, ADR 0006) **except** that the check records nothing
+  at URSSAF, so it never gives an unknown outcome and is never an "accepted" answer:
+  - a retryable failure (429, token failure, local rate limit, transport error, 5xx, including an `UrssafUnavailable` that
+    `mayHaveReachedUrssaf()`) leaves the record in `error`, then `pending` again while attempts remain and
+    `RetryableUrssafFailure` is thrown after the commit, or `exhausted` is returned;
+  - an `OutcomeUnknown` (a foreign gateway), another package exception or any other throwable at this stage leaves the
+    record in `error` (pending again while attempts remain) and is rethrown unchanged, never wrapped in
+    `RetryableUrssafFailure`;
+  - a duplicate code → `already_declared`, another 400 → `rejected` (050 / 051 is not called), 401 / 403 / 512 →
+    `invalid_credentials`.
+  The answer of a successful check (amounts, non-blocking messages) is not kept.
+- **`PreDeclareSalary`** is a query over the same ports (045 / 046 by variant): nothing is recorded, the mandate guard
+  applies (ADR 0009), and the result is a `PreDeclarationView` (amounts as decimal euro strings with two decimals, the rate as
+  text, the child checks by entitlement status without any child identity, the non-blocking messages).

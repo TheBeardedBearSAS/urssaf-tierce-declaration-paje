@@ -45,3 +45,35 @@ on the retry safety of 023 (it may **create** an employee), 030 and 031 (§5).
 - The package never produces an automatic duplicate declaration.
 - Some declarations need a manual action; `GetWorkflowOverview` counts them under `needingAttention()`.
 - The retry safety of 023 / 030 / 031 stays an open point (api-reference §5) settled by configuration, not code.
+
+## Amendment (2026-11-17, lead-accepted, lot 4b)
+
+- **Mandates:** `RegisterMandate`, `CancelMandate` and `AssociateEmployee` rethrow the `OutcomeUnknown` of 030 / 031 / 023 and
+  change nothing locally; a `COMPTE_DEJA_MANDATE` rejection is the `UrssafRequestRejected` of kind `mandate_held_elsewhere`,
+  also recording nothing. The batch `SyncEmployerStatuses` (020, a safe read) reports retryable failures per account
+  (`ItemOutcome::RetryLater`) instead of stopping. After an unknown outcome on 030 / 031, check first, then record without a
+  call: `ImportMandate` when pajemploi shows the mandate registered, `RecordMandateCancellation` when it shows it cancelled;
+  call 030 / 031 again only when the mandate is not in the state aimed at. Only `MandateRecordingFailed` means that the call
+  was accepted (ADR 0006).
+- **Settlement of `DeclareSalary`:** the URSSAF call is made outside any transaction, after the atomic claim; its answer is
+  then settled in a transaction of its own against the record as re-read at that time (ADR 0006, settlement table). For the
+  claim's own record: `OutcomeUnknown` (and, from a foreign gateway, an `UrssafUnavailable` that `mayHaveReachedUrssaf()`) on
+  050 / 051 → `outcome_unknown` with reason `may_have_reached_urssaf`; a duplicate rejection
+  (`RejectionKind::DuplicateDeclaration`) → `already_declared`; another 400 → `rejected` (a generic `urssaf.rejected` error
+  when URSSAF gave no code); `UrssafAuthenticationFailed` → `invalid_credentials`; a `RetryableException` that provably did
+  not reach URSSAF (429, token failure, local rate limit) → `error`, then `pending` again while attempts remain
+  (`RetryableUrssafFailure` is thrown after the commit, with the `Retry-After` delay as `retryAfterSeconds()`) or
+  `ItemOutcome::Exhausted` returned with the record left in `error`; any other package exception → `error` / `pending` and
+  rethrown unchanged; any other throwable (a bug, a foreign gateway) → `outcome_unknown` and rethrown (it may have been
+  sent). A 200 is recorded `declared` on every state but `declared`; an accepted answer that cannot be recorded is a
+  `DeclarationRecordingFailed`, never a resend. Any other answer on a record the claim no longer owns changes nothing.
+- **Stored errors:** `SubmissionError::kind` is the `RejectionKind` value of the rejection (`technical` for an unavailable
+  service or an unknown outcome, `unknown` for an unexpected response or failure). The synthetic codes are
+  `urssaf.unavailable`, `urssaf.unexpected_response`, `urssaf.unexpected_failure` and `urssaf.rejected`; their message is the
+  class name of the exception (never its message: a foreign exception may carry host data, ADR 0007).
+- **Stale submissions:** `ReconcileStaleDeclarations` stores no error on the record it moves to `outcome_unknown` (reason
+  `stale_submission` only) and reports it as `manual_review`. It can reconcile a record whose call is still in flight and
+  then accepted: the late acceptance records the answer (ADR 0006), which is why `workflow.stale_submission_after` must
+  exceed the HTTP client timeout.
+- **Outbox relay:** `RelayOutbox` marks a failed delivery with the class and the code of the sink exception only
+  (`Outbox::markFailed()` documents it), never its message (ADR 0007).

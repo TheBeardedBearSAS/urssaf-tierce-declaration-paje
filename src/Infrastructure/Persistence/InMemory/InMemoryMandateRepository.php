@@ -18,11 +18,24 @@ use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Shared\TenantId;
  *
  * Stores snapshots like {@see InMemoryEmployerAccountRepository} (copy on save and on every read, pending events never
  * persisted nor consumed).
+ *
+ * Optimistic concurrency: see {@see VersionTokens}. Saving a copy another writer changed since it was read is refused
+ * (a never-read instance is refused too when the identifier is already stored).
  */
 final class InMemoryMandateRepository implements MandateRepository
 {
     /** @var array<string, Mandate> stored snapshots by mandate id, in insertion order */
     private array $mandates = [];
+
+    private readonly VersionTokens $versions;
+
+    public function __construct()
+    {
+        $this->versions = new VersionTokens(
+            MandateRepository::CONCURRENT_MODIFICATION,
+            'The mandate was changed by another writer since it was read.',
+        );
+    }
 
     /**
      * Copies of every stored mandate (monitoring, tests).
@@ -31,19 +44,23 @@ final class InMemoryMandateRepository implements MandateRepository
      */
     public function all(): array
     {
-        return Selection::of($this->mandates)->copies();
+        return Selection::of($this->mandates)->copies($this->adopt(...));
     }
 
     /**
-     * @throws InvariantViolation "mandate.duplicate_active"
+     * @throws InvariantViolation "mandate.concurrent_modification" (saved by another writer, or erased, since this
+     *                            instance was read) or "mandate.duplicate_active"
      */
     #[Override]
     public function save(Mandate $mandate): void
     {
+        $id = $mandate->id()->value();
+        $this->versions->assertCurrent($mandate, $id);
         $this->assertSingleActive($mandate);
         $snapshot = clone $mandate;
         $snapshot->releaseEvents();
-        $this->mandates[$mandate->id()->value()] = $snapshot;
+        $this->mandates[$id] = $snapshot;
+        $this->versions->saved($mandate, $id);
     }
 
     #[Override]
@@ -51,7 +68,7 @@ final class InMemoryMandateRepository implements MandateRepository
     {
         $stored = $this->mandates[$id->value()] ?? throw RecordNotFound::withIdentifier('mandate', $id->value());
 
-        return clone $stored;
+        return $this->versions->track(clone $stored, $id->value());
     }
 
     #[Override]
@@ -63,7 +80,7 @@ final class InMemoryMandateRepository implements MandateRepository
                     && $mandate->tenantId()->equals($tenantId)
                     && $mandate->employerNumber()->equals($employerNumber),
             )
-            ->copies()[0] ?? null;
+            ->copies($this->adopt(...))[0] ?? null;
     }
 
     #[Override]
@@ -77,13 +94,19 @@ final class InMemoryMandateRepository implements MandateRepository
             ->sortedBy(
                 static fn(Mandate $a, Mandate $b): int => Selection::compareInstants($a->registeredAt(), $b->registeredAt()),
             )
-            ->copies();
+            ->copies($this->adopt(...));
     }
 
     #[Override]
     public function delete(MandateId $id): void
     {
         unset($this->mandates[$id->value()]);
+        $this->versions->forget($id->value());
+    }
+
+    private function adopt(Mandate $copy): Mandate
+    {
+        return $this->versions->track($copy, $copy->id()->value());
     }
 
     private function assertSingleActive(Mandate $mandate): void

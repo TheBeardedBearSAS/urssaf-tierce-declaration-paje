@@ -60,3 +60,17 @@ project rules forbid inventing a rule.
 - Operation 023 with an `EmployeeByAdministrativeData` identification: the identity of that identification is never sent
   (api-reference §5), so the wire / application lot must require `EmployeeCreation::identity()` to be non-empty in that
   case, with a stable violation code, otherwise the request would carry no criterion at all.
+
+## Amendment (2026-11-17, lead-accepted, lot 4b)
+
+- `AssociateEmployee` (023) with an `EmployeeByAdministrativeData` identification and an `EmployeeCreation` whose
+  `identity()` is absent or empty (`AdministrativeIdentity::isEmpty()`) is refused before any call with `ValidationFailed`
+  holding one violation, path `creation.identity`, code `employee_association.identity_required`. Other
+  identifications are not concerned (they carry their own criterion). This rule belongs to `AssociateEmployee`, not to the
+  declaration use cases.
+- **`MandateGuard`** relies on the local mandate only (`MandateRepository::findActive()`): 020 says nothing about the mandate in
+  PAJE, so there is no "reported present" shortcut; an employer mandated outside the package passes after `ImportMandate`.
+  The operation checked follows the variant (`PreDeclareSalary`: 045 / 046, `DeclareSalary`: 050 / 051). It runs before any
+  record or claim, and only on the paths that send (a new record, a `pending` record, a retryable `error` record, a superseded
+  `rejected` one); a replay or a `not_claimed` answer needs no mandate.
+- **`MandateRequired`** (violation code `mandate.required`) carries the method number only, never the employer number.

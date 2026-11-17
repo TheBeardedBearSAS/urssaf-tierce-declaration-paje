@@ -200,7 +200,11 @@ class DeclarationRecord
      * submitting -> declared (050 / 051 succeeded). Clears the last errors. The child checks of the result are not kept
      * (child names, ADR 0007).
      *
-     * @throws InvalidStateTransition
+     * An accepted answer is never discarded: it is also recorded on a record that is no longer the claim's own, whatever
+     * its state but declared (late acceptance, ADR 0006): outcome_unknown, pending, error, invalid_credentials,
+     * submitting (claimed again), rejected, already_declared. Same event.
+     *
+     * @throws InvalidStateTransition from declared (the first result is kept)
      */
     public function markDeclared(DeclarationResult $result, Instant $now): void
     {

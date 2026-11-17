@@ -33,11 +33,24 @@ use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Shared\TenantId;
  * @mago-expect lint:too-many-methods
  * @mago-expect lint:cyclomatic-complexity
  * @mago-expect lint:kan-defect
+ *
+ * Optimistic concurrency: see {@see VersionTokens}. Saving a copy another writer changed since it was read is refused
+ * (a never-read instance is refused too when the identifier is already stored).
  */
 final class InMemoryDeclarationRecordRepository implements DeclarationRecordRepository
 {
     /** @var array<string, DeclarationRecord> stored snapshots by record id, in insertion order */
     private array $records = [];
+
+    private readonly VersionTokens $versions;
+
+    public function __construct()
+    {
+        $this->versions = new VersionTokens(
+            DeclarationRecordRepository::CONCURRENT_MODIFICATION,
+            'The declaration record was changed by another writer since it was read.',
+        );
+    }
 
     /**
      * Copies of every stored record (monitoring, tests).
@@ -46,19 +59,23 @@ final class InMemoryDeclarationRecordRepository implements DeclarationRecordRepo
      */
     public function all(): array
     {
-        return Selection::of($this->records)->copies();
+        return Selection::of($this->records)->copies($this->adopt(...));
     }
 
     /**
-     * @throws InvariantViolation "declaration_record.duplicate_external_reference"
+     * @throws InvariantViolation "declaration_record.concurrent_modification" (saved, claimed or erased by another writer
+     *                            since this instance was read) or "declaration_record.duplicate_external_reference"
      */
     #[Override]
     public function save(DeclarationRecord $record): void
     {
+        $id = $record->id()->value();
+        $this->versions->assertCurrent($record, $id);
         $this->assertUnique($record);
         $snapshot = clone $record;
         $snapshot->releaseEvents();
-        $this->records[$record->id()->value()] = $snapshot;
+        $this->records[$id] = $snapshot;
+        $this->versions->saved($record, $id);
     }
 
     #[Override]
@@ -66,7 +83,7 @@ final class InMemoryDeclarationRecordRepository implements DeclarationRecordRepo
     {
         $stored = $this->records[$id->value()] ?? throw RecordNotFound::withIdentifier('declaration_record', $id->value());
 
-        return clone $stored;
+        return $this->versions->track(clone $stored, $id->value());
     }
 
     #[Override]
@@ -77,7 +94,7 @@ final class InMemoryDeclarationRecordRepository implements DeclarationRecordRepo
                 static fn(DeclarationRecord $record): bool => $record->tenantId()->equals($tenantId)
                     && $record->externalReference()->equals($externalReference),
             )
-            ->copies()[0] ?? null;
+            ->copies($this->adopt(...))[0] ?? null;
     }
 
     #[Override]
@@ -95,7 +112,7 @@ final class InMemoryDeclarationRecordRepository implements DeclarationRecordRepo
                 ),
             )
             ->limit($limit)
-            ->copies();
+            ->copies($this->adopt(...));
     }
 
     #[Override]
@@ -113,7 +130,7 @@ final class InMemoryDeclarationRecordRepository implements DeclarationRecordRepo
                 ),
             )
             ->limit($limit)
-            ->copies();
+            ->copies($this->adopt(...));
     }
 
     #[Override]
@@ -160,6 +177,7 @@ final class InMemoryDeclarationRecordRepository implements DeclarationRecordRepo
         }
 
         $stored->startSubmission($now);
+        $this->versions->bump($id->value());
 
         return true;
     }
@@ -168,6 +186,7 @@ final class InMemoryDeclarationRecordRepository implements DeclarationRecordRepo
     public function delete(DeclarationRecordId $id): void
     {
         unset($this->records[$id->value()]);
+        $this->versions->forget($id->value());
     }
 
     #[Override]
@@ -205,6 +224,7 @@ final class InMemoryDeclarationRecordRepository implements DeclarationRecordRepo
         foreach ($selected as $record) {
             $ids[] = $record->id();
             unset($this->records[$record->id()->value()]);
+            $this->versions->forget($record->id()->value());
         }
 
         return $ids;
@@ -216,6 +236,11 @@ final class InMemoryDeclarationRecordRepository implements DeclarationRecordRepo
             && $record->snapshot()->employerNumber()->equals($employerNumber);
     }
 
+    private function adopt(DeclarationRecord $copy): DeclarationRecord
+    {
+        return $this->versions->track($copy, $copy->id()->value());
+    }
+
     private function assertUnique(DeclarationRecord $record): void
     {
         foreach ($this->records as $stored) {
@@ -224,7 +249,7 @@ final class InMemoryDeclarationRecordRepository implements DeclarationRecordRepo
             }
             if ($stored->externalReference()->equals($record->externalReference())) {
                 throw InvariantViolation::because(
-                    'declaration_record.duplicate_external_reference',
+                    DeclarationRecordRepository::DUPLICATE_EXTERNAL_REFERENCE,
                     'A declaration record already exists for this external reference.',
                     ['external_reference' => $record->externalReference()->value()],
                 );

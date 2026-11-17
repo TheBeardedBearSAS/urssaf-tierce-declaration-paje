@@ -98,10 +98,34 @@ final class DeclarationStatusTest extends TestCase
         static::assertSame(2, $declared->attempts());
     }
 
-    public function testDeclaredIsOnlyPossibleFromSubmitting(): void
+    public function testDeclaredIsAlsoTheLateAcceptanceOfEveryStateButDeclared(): void
     {
-        RecordSamples::assertInvalidTransition(static fn(): DeclarationStatus => self::pending()->declared(RecordSamples::result(), RecordSamples::later(1)), 'pending', 'declared');
-        RecordSamples::assertInvalidTransition(static fn(): DeclarationStatus => self::unknown()->declared(RecordSamples::result(), RecordSamples::later(3)), 'outcome_unknown', 'declared');
+        $at = RecordSamples::later(9);
+        $states = [
+            self::pending(),
+            self::unknown(),
+            self::submitting()->failed(RecordSamples::errors(), RecordSamples::later(2)),
+            self::submitting()->credentialsRejected(RecordSamples::later(2)),
+            self::submitting()->rejected(RecordSamples::errors(), RecordSamples::later(2)),
+            self::submitting()->alreadyDeclared(RecordSamples::errors(), RecordSamples::later(2)),
+        ];
+        foreach ($states as $status) {
+            $declared = $status->declared(RecordSamples::result(), $at);
+
+            static::assertSame(DeclarationState::Declared, $declared->state());
+            static::assertSame([], $declared->errors());
+            static::assertNull($declared->outcomeUnknownReason());
+            static::assertEquals(RecordSamples::result(), $declared->result());
+            static::assertSame($status->attempts(), $declared->attempts());
+            static::assertEquals($at, $declared->updatedAt());
+        }
+    }
+
+    public function testDeclaredKeepsTheFirstResult(): void
+    {
+        $declared = self::submitting()->declared(RecordSamples::result(), RecordSamples::later(2));
+
+        RecordSamples::assertInvalidTransition(static fn(): DeclarationStatus => $declared->declared(RecordSamples::result(), RecordSamples::later(3)), 'declared', 'declared');
     }
 
     public function testResolvedAsDeclaredStoresTheResultAndClearsTheErrors(): void
@@ -201,7 +225,6 @@ final class DeclarationStatusTest extends TestCase
         $pending = self::pending();
         $later = RecordSamples::later(1);
         $errors = RecordSamples::errors();
-        $result = RecordSamples::result();
         $unknown = OutcomeUnknownReason::MayHaveReachedUrssaf;
 
         RecordSamples::assertInvalidTransition(static fn(): DeclarationStatus => $pending->rejected($errors, $later), 'pending', 'rejected');
@@ -209,7 +232,6 @@ final class DeclarationStatusTest extends TestCase
         RecordSamples::assertInvalidTransition(static fn(): DeclarationStatus => $pending->failed($errors, $later), 'pending', 'error');
         RecordSamples::assertInvalidTransition(static fn(): DeclarationStatus => $pending->outcomeUnknown($unknown, $errors, $later), 'pending', 'outcome_unknown');
         RecordSamples::assertInvalidTransition(static fn(): DeclarationStatus => $pending->credentialsRejected($later), 'pending', 'invalid_credentials');
-        RecordSamples::assertInvalidTransition(static fn(): DeclarationStatus => $pending->declared($result, $later), 'pending', 'declared');
         RecordSamples::assertInvalidTransition(static fn(): DeclarationStatus => $pending->submissionStarted($later)->submissionStarted($later), 'submitting', 'submitting');
     }
 

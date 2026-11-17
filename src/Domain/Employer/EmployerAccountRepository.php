@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Employer;
 
+use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Exception\InvariantViolation;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Exception\RecordNotFound;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Shared\ExternalReference;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Shared\TenantId;
@@ -14,8 +15,18 @@ use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Shared\TenantId;
  */
 interface EmployerAccountRepository
 {
+    /** Violation code of a save refused because another writer changed the account since it was read. */
+    public const CONCURRENT_MODIFICATION = 'employer_account.concurrent_modification';
+
     /**
      * Inserts or updates. Domain events are not persisted: release and publish them separately.
+     *
+     * Optimistic concurrency (ADR 0006, ADR 0014): a copy that another writer changed (saved or erased) since it was
+     * read is refused. The copy is then stale: read the account again.
+     *
+     * @throws InvariantViolation "employer_account.concurrent_modification" (see {@see self::CONCURRENT_MODIFICATION}),
+     *                            "employer_account.duplicate_employer_number" or
+     *                            "employer_account.duplicate_external_reference"
      */
     public function save(EmployerAccount $account): void;
 

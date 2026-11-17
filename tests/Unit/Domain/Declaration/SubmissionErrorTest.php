@@ -44,13 +44,14 @@ final class SubmissionErrorTest extends TestCase
         );
     }
 
-    public function testMasksTheDescriptionInDebugDumps(): void
+    public function testMasksTheMessageAndTheDescriptionInDebugDumps(): void
     {
-        DomainAssertions::assertSensitiveParameters(SubmissionError::class, 'of', ['description']);
+        DomainAssertions::assertSensitiveParameters(SubmissionError::class, 'of', ['message', 'description']);
         static::assertSame(
-            ['code' => 'C', 'kind' => 'k', 'message' => 'M', 'description' => '***'],
+            ['code' => 'C', 'kind' => 'k', 'message' => '***', 'description' => '***'],
             SubmissionError::of('C', 'k', 'M', 'secret')->__debugInfo(),
         );
-        static::assertNull(SubmissionError::of('C', 'k', 'M', null)->__debugInfo()['description']);
+        static::assertNull(SubmissionError::of('C', 'k', null, null)->__debugInfo()['description']);
+        static::assertNull(SubmissionError::of('C', 'k', null, 'D')->__debugInfo()['message']);
     }
 }

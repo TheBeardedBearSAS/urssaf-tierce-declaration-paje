@@ -26,6 +26,7 @@
     },
     "require": {
         "php": ">=8.2",
+        "ext-filter": "*",
         "ext-json": "*",
         "ext-mbstring": "*",
         "psr/cache": "^2.0 || ^3.0",

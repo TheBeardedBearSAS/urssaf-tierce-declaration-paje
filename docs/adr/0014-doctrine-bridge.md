@@ -32,3 +32,14 @@ mandate per employer" rule, a record claimed by an atomic `UPDATE`, and minimise
 
 - Migrations are the host's (`doctrine:migrations:diff`); the schema diagnostic reports pending changes.
 - Documented in `docs/doctrine.md`.
+
+## Amendment (2026-11-17, lead-accepted, lot 4b)
+
+- Decision 4 is now a contract of the ports, not only of this bridge (ADR 0006, same date): the in-memory repositories refuse
+  a stale save with the same `<aggregate>.concurrent_modification` codes, and the shared repository contract traits
+  (`tests/Functional/Doctrine/Contract`) hold the scenarios (a copy saved after another writer saved it, a copy read before a
+  claim, a copy found by a query, a copy erased by another writer), which this bridge must satisfy. Each trait declares an
+  abstract `anotherWriter()` seam returning an independent repository over the same store (the in-memory test returns the
+  repository itself; the bridge test returns a repository over a second EntityManager), and the competing copies are read
+  and saved through it. The save of an instance that was never read for an identifier that is already stored is not part
+  of the contract: each adapter reports it in its own way, and the bridge decides its behaviour when it is built.

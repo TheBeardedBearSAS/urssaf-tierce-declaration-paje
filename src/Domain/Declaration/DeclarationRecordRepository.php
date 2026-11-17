@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Declaration;
 
 use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Employer\PajeEmployerNumber;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Exception\InvariantViolation;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Exception\RecordNotFound;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Shared\ExternalReference;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Shared\Instant;
@@ -19,8 +20,22 @@ use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Shared\TenantId;
  */
 interface DeclarationRecordRepository
 {
+    /** Violation code of a save refused because another writer changed the record since it was read. */
+    public const CONCURRENT_MODIFICATION = 'declaration_record.concurrent_modification';
+
+    /** Violation code of a save refused because the (tenant, external reference) pair is already recorded. */
+    public const DUPLICATE_EXTERNAL_REFERENCE = 'declaration_record.duplicate_external_reference';
+
     /**
      * Inserts or updates. Domain events are not persisted: release and publish them separately.
+     *
+     * Optimistic concurrency (ADR 0006, ADR 0014): a copy that another writer changed (saved, claimed with
+     * {@see self::claimForSubmission()} or erased) since it was read is refused. The copy is then stale: read the record again.
+     *
+     * @throws InvariantViolation "declaration_record.concurrent_modification" (see {@see self::CONCURRENT_MODIFICATION})
+     *                            or "declaration_record.duplicate_external_reference" (see
+     *                            {@see self::DUPLICATE_EXTERNAL_REFERENCE}: a concurrent first declaration of the same
+     *                            external reference)
      */
     public function save(DeclarationRecord $record): void;
 

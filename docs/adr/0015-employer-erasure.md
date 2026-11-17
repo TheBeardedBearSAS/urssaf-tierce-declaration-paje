@@ -35,3 +35,15 @@ host (ADR 0007). Hosts need a supported way to erase an employer from the packag
   tenant, external reference, erased ids, instant: no employer number, no birth date) and changes no state; the caller
   deletes the account, its mandates and its records in the same transaction, then releases the event.
 - `MandateRepository::delete(MandateId)` is a no-op for an unknown id and records no event.
+
+## Amendment (2026-11-17, lead-accepted, lot 4b)
+
+- `ForgetEmployer` (`EmployerSelector`, nullable `allowActiveMandate` / `allowUnknownOutcomes`) returns an
+  `EmployerErasure` (account id, mandate ids, declaration record ids). `EmployerErasureRefused` carries the account id and a
+  count only (`employer_account.forget_active_mandate`, `forget_submission_in_flight`, `forget_unknown_outcome`). After the
+  deletions the handler re-counts the employer's records and mandates and, if any is left (another process wrote one),
+  throws `InvariantViolation` `employer_account.concurrent_modification`: the transaction is rolled back and no event is
+  published.
+- A 050 / 051 accepted after `ForgetEmployer` erased its record cannot be recorded: `DeclareSalary` throws
+  `DeclarationRecordingFailed` carrying the `referenceDocumentaire` (ADR 0006, settlement table); any other answer of that call
+  changes nothing.

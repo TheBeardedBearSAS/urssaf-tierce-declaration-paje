@@ -1,3 +1,9 @@
+# This file is part of thebeardedbear/urssaf-tierce-declaration-paje.
+#
+# Copyright (c) TheBeardedBear and the urssaf-tierce-declaration-paje contributors
+#
+# SPDX-License-Identifier: MIT
+
 # OpenSSF Scorecard: supply-chain security checks, results published to the public API (badge) and to code scanning.
 name: Scorecard
 

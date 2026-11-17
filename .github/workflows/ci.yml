@@ -1,3 +1,9 @@
+# This file is part of thebeardedbear/urssaf-tierce-declaration-paje.
+#
+# Copyright (c) TheBeardedBear and the urssaf-tierce-declaration-paje contributors
+#
+# SPDX-License-Identifier: MIT
+
 name: CI
 
 on:
@@ -79,6 +85,8 @@ jobs:
             echo "Forbidden word found (see files above)"
             exit 1
           fi
+      - name: SPDX headers
+        run: sh bin/check-spdx
 
   hadolint:
     name: hadolint

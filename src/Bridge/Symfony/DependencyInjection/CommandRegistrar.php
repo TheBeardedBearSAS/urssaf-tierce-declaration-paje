@@ -2,6 +2,14 @@
 
 declare(strict_types=1);
 
+/*
+ * This file is part of thebeardedbear/urssaf-tierce-declaration-paje.
+ *
+ * Copyright (c) TheBeardedBear and the urssaf-tierce-declaration-paje contributors
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 namespace TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\DependencyInjection;
 
 use Symfony\Component\DependencyInjection\Loader\Configurator\ServicesConfigurator;

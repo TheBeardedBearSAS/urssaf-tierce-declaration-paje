@@ -40,8 +40,17 @@ test-unit: ## Run unit tests
 test-functional: ## Run functional tests
 	$(PHP) vendor/bin/phpunit --testsuite=functional
 
-test-contract: ## Run live sandbox contract tests (needs URSSAF_SANDBOX_CLIENT_ID/SECRET)
-	docker compose run --rm -e URSSAF_SANDBOX_CLIENT_ID -e URSSAF_SANDBOX_CLIENT_SECRET -e URSSAF_SANDBOX_BASE_URI php vendor/bin/phpunit --testsuite=contract
+# Sandbox variables forwarded to the container. `-e NAME` without a value copies the shell value and leaves the variable
+# unset when the shell has none (so the live tests skip). No value is ever written here and no --env-file is read.
+CONTRACT_ENV := URSSAF_SANDBOX_CLIENT_ID URSSAF_SANDBOX_CLIENT_SECRET URSSAF_SANDBOX_BASE_URI URSSAF_SANDBOX_TOKEN_URI \
+	URSSAF_SANDBOX_EMPLOYER_NUMBER URSSAF_SANDBOX_EMPLOYER_BIRTH_DATE URSSAF_SANDBOX_EMPLOYEE_NUMBER \
+	URSSAF_SANDBOX_CHILD_LAST_NAME URSSAF_SANDBOX_CHILD_FIRST_NAME URSSAF_SANDBOX_CHILD_BIRTH_DATE \
+	URSSAF_SANDBOX_ALLOW_WRITES
+
+test-contract: ## Live sandbox contract tests (skipped without URSSAF_SANDBOX_CLIENT_ID/SECRET); report in var/contract
+	$(PHP) rm -f var/contract/sandbox-report.json
+	docker compose run --rm $(addprefix -e ,$(CONTRACT_ENV)) php vendor/bin/phpunit --testsuite=contract
+	@$(PHP) sh -c '[ -f var/contract/sandbox-report.json ] && cat var/contract/sandbox-report.json || true'
 
 coverage: ## Coverage (pcov): text + clover + html in var/coverage, enforce 100% lines/methods/classes
 	$(PHP) vendor/bin/phpunit $(UNIT_FUNCTIONAL) --coverage-text --coverage-clover var/coverage/clover.xml --coverage-html var/coverage/html --coverage-xml var/coverage/coverage-xml --log-junit var/coverage/junit.xml

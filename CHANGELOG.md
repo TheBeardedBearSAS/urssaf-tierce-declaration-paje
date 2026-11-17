@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Sandbox contract suite (`make test-contract`, manual CI job): live tests of the 12 operations against the URSSAF
+  sandbox, opt-in writes, a redacted report in `var/contract/sandbox-report.json` that settles the open points of
+  `docs/api-reference.md` section 5 (mandate prerequisite, `ER_API_DECLA_*` spelling, 023 required fields, retry safety,
+  response decimals); `docs/testing.md`.
 - Doctrine bridge (ORM 3 / DBAL 4, SQLite in CI): XML mapping, `urssaf_paje_*` tables and DBAL types, repositories with
   native optimistic locking (`*.concurrent_modification`), one-active-mandate key table, claim by atomic `UPDATE`, outbox,
   workflow statistics, transaction manager and employer erasure; the birth date has its own type (encryption recipe) and no

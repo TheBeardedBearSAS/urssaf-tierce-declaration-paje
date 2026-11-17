@@ -97,6 +97,7 @@ contacts URSSAF.
 - [docs/standalone.md](docs/standalone.md) — wiring without a framework, scheduling, testing with the simulator.
 - [docs/symfony.md](docs/symfony.md) — Symfony bundle: configuration, commands, Messenger, scheduler, locks, diagnostics, translations.
 - [docs/workflow.md](docs/workflow.md) — lifecycles, outcome and re-entry tables, unknown outcomes, safety crons.
+- [docs/testing.md](docs/testing.md) — test suites, fakes, quality gates and the sandbox contract suite.
 - [docs/roadmap.md](docs/roadmap.md) — planned architecture and order of work.
 - [docs/adr/](docs/adr/README.md) — architecture decision records.
 - [docs/openapi/](docs/openapi/) — official OpenAPI contract(s) from the URSSAF API portal.
@@ -114,10 +115,31 @@ make install     # build the image, install dependencies
 make ci          # full quality gate: cs, rector, phpstan, mago, deptrac, composer checks, hadolint, guard, coverage, infection
 make test        # unit + functional tests
 make bench       # benchmarks (PHPBench, tests/Benchmark), added with the implementation
+make test-contract  # live sandbox contract tests (skipped without credentials), see below
 make help        # every target
 ```
 
 `make ci PHP_VERSION=8.4` runs the gate on another PHP version.
+
+### Contract tests (URSSAF sandbox)
+
+`make test-contract` runs the live contract suite against the URSSAF sandbox (`https://api-edi.urssaf.fr`; the production
+host is refused). It is never part of `make test` or `make ci`. Without credentials every live test is skipped and the
+target passes. Export the variables in your shell (they are forwarded to the container, nothing is written to a file):
+
+| Variable | Purpose |
+|---|---|
+| `URSSAF_SANDBOX_CLIENT_ID`, `URSSAF_SANDBOX_CLIENT_SECRET` | OAuth2 credentials (secrets); without them every live test is skipped |
+| `URSSAF_SANDBOX_BASE_URI`, `URSSAF_SANDBOX_TOKEN_URI` | optional host overrides (never `api.urssaf.fr`); when set, `URSSAF_SANDBOX_TOKEN_URI` receives every SDK token request, and the token test also probes the derived URI first |
+| `URSSAF_SANDBOX_EMPLOYER_NUMBER`, `URSSAF_SANDBOX_EMPLOYER_BIRTH_DATE` | sandbox test employer (both or none) |
+| `URSSAF_SANDBOX_EMPLOYEE_NUMBER` | sandbox test employee |
+| `URSSAF_SANDBOX_CHILD_LAST_NAME`, `URSSAF_SANDBOX_CHILD_FIRST_NAME`, `URSSAF_SANDBOX_CHILD_BIRTH_DATE` | sandbox test child (all three or none) |
+| `URSSAF_SANDBOX_ALLOW_WRITES` | `1` also runs the tests that write sandbox state (030, 031, 023, 045, 046, 050, 051) |
+
+A test whose variables are missing is skipped. The run writes `var/contract/sandbox-report.json` (statuses and error codes
+only, never a body, a number, a name or a date). The same variables feed the manual `contract` job of the CI workflow
+(secrets for the client id and secret, environment (or repository) variables for the others, a `contract_writes` input to write). Details
+and the goals of the run: [docs/testing.md](docs/testing.md).
 
 Once the repository is public, `main` publishes its quality proofs, linked from the badges at the top of this file: the
 coverage report on Codecov, the full mutation report on the Stryker Dashboard, the SonarQube Cloud quality gate and the

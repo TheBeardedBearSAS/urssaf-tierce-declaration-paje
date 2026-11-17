@@ -75,10 +75,11 @@ Doctrine bridges, 100 % coverage and MSI).
   `tests/Fixtures/wire/*.json` (requests serialised, responses parsed, error payloads in both shapes), handlers with a
   fake gateway.
 - Functional: Symfony bundle wiring; Doctrine mappings.
-- Contract (`make test-contract`, manual CI job): sandbox credentials `URSSAF_SANDBOX_CLIENT_ID/SECRET`, optional
-  `URSSAF_SANDBOX_BASE_URI`; a sandbox test employer (number + birth date) with a registered mandate, a test employee,
-  a test child (to add as repository variables). First goals: settle the mandate prerequisite, the `ER_API_DECLA_*` code
-  suffixes and the 023 required-fields open points of api-reference §5.
+- Contract (`make test-contract`, manual CI job; implemented, see [testing.md](testing.md)): sandbox credentials
+  `URSSAF_SANDBOX_CLIENT_ID/SECRET`, optional `URSSAF_SANDBOX_BASE_URI` and `URSSAF_SANDBOX_TOKEN_URI` (when set, every SDK token request goes there; the production host is refused); a sandbox test employer (number + birth date)
+  with a registered mandate, a test employee, a test child (environment (or repository) variables). First goals: settle the mandate
+  prerequisite, the `ER_API_DECLA_*` code suffixes and the 023 required-fields open points of api-reference §5. The
+  first run against the sandbox is still to do.
 
 ## Draft and factory layer
 
@@ -99,7 +100,7 @@ step 4 below, with the Application commands; the factories are in `Domain\*\Inpu
      violation code. `AssociateEmployeeRequestMapper` does not enforce it.
 5. Symfony bridge.
 6. Doctrine bridge (employers, mandates, declarations tracking).
-7. Contract tests, then remove the open points from `api-reference.md`.
+7. Contract tests (suite written), then run it against the sandbox and remove the settled open points from `api-reference.md`.
 
 ## Out of scope
 

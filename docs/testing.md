@@ -46,6 +46,11 @@ encoding, wire decoding). CI runs them on pull requests against the base commit 
 ## Coverage and mutation gates
 
 - `make coverage`: 100 % of lines, methods and classes over `src` (unit + functional suites, `bin/check-coverage`).
+- `make coverage-branches`: at least 96 % of the branches over `src` (Xdebug path coverage, slow, `bin/check-branch-coverage`;
+  measured 96.1 %). The CI runs it on `main`, nightly and on demand, not on pull requests. Xdebug records no branch for a
+  function invoked through a first-class callable (`array_map($this->check(...), $items)`, `$this->parse(...)` passed as a
+  callback); the line and mutation gates see it, this one does not. Where a plain loop reads as well, prefer it to a
+  first-class callable in `array_map`, so that the branches of the callee are measured.
 - `make infection`: 100 % MSI and covered MSI over `src`, with its own initial test pass (`unit` + `functional`).
 - `tests/` is not measured: the contract suite and its support code are outside both gates, and no threshold is lowered
   for them. The support code is nevertheless tested by `SandboxSupportTest` (below).

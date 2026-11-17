@@ -44,3 +44,13 @@ Status: Accepted (2026-11-17). Relates to [ADR 0000](0000-reference-architecture
 - api-reference §4 decision 3 is amended: amounts are read from the shortest round-trip representation rounded to the
   cent, not from the raw JSON text.
 - Hosts that want a dry-run before every declaration flip one setting.
+
+## Amendment (2026-11-17, lead-accepted, lot 2)
+
+- The child echoed in `verificationEnfantPe[].inputEnfantPe` (022, 045, 046, 050, 051) is informational: it is decoded
+  leniently. A fragment that cannot be read with the request-side rules (spelling, length, date, wrong type) gives a
+  `ChildCheck` without child, never an `UnexpectedUrssafResponse`: a recorded declaration must not become an unknown
+  outcome because of it. A status that is not an integer is still refused.
+- Every response mapper of a 2xx body (020, 021, 022, 023, 040, 041, 045, 046, 050, 051) refuses a body that is not a JSON
+  object (empty body, `[]`, top-level list) with `body is not a JSON object`; `{}` is accepted. On 050 / 051 this is an
+  unknown outcome (ADR 0003). 030 / 031 accept a blank body or `{}` only.

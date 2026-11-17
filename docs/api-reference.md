@@ -15,7 +15,7 @@ when the PDF is not versioned. Here the PDF (1.5.2) is newer than the Swagger (1
 adds blocking / non-blocking messages to PDF §4.4 and has no wire impact. Field names, codes and wire values below are
 reproduced verbatim from the specification (they are French by design); everything else in the package is English.
 
-> Status: specification only. Nothing below is implemented yet; see [roadmap.md](roadmap.md).
+> Status: the domain model and the wire mappers are implemented; the HTTP gateway and the application layer are pending (see [roadmap.md](roadmap.md)).
 
 Vocabulary: *PE* = *particulier employeur* (private employer); *SP* = *salarié particulier* (private-employed worker);
 *AMA* = *assistante maternelle agréée* (licensed childminder); *GED* = *garde d'enfants à domicile* (home childcare);
@@ -760,6 +760,8 @@ Architecture decisions (inherited from `urssaf-tiers-prestations` or specific to
 
 ## 5. Open points
 
+- **Echoed child** (`inputEnfantPe` of 022, 045, 046, 050, 051): decoded leniently; an unreadable fragment is a check without
+  child (ADR 0008 amendment).
 - **Swagger 1.5.1 vs PDF 1.5.2**: the PDF is newer; the only PDF 1.5.2 change is new §4.4 messages (changelog). The
   Swagger has no per-code error documentation.
 - **Production vs sandbox Swagger**: identical except `host` (`api.urssaf.fr` / `api-edi.urssaf.fr`).

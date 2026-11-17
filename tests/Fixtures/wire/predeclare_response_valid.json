@@ -1,0 +1,34 @@
+{
+    "declaration": {
+        "dtPrelevementPrevisionnelle": "2020-01-01",
+        "dtVersementPrevisionnelle": "2020-01-31",
+        "mntApreleverParPaje": 0,
+        "mntAverserParPaje": 0,
+        "mntCotiEmplAcharge": 0,
+        "mntCotiPriseEnChargeOdpf": 0,
+        "mntCotisations": 0,
+        "mntEmplAverserSalarie": 0,
+        "mntEmplCmgRemuneration": 0,
+        "mntImpotPas": 0,
+        "mntSalaireNetApayerApresPas": 0,
+        "mntSalaireNetImposable": 0,
+        "txPas": 0
+    },
+    "erreursNonBloquantes": [
+        {
+            "code": "ER_API_020_NB_0000",
+            "description": "Le compte employeur n'est pas actif dans le SI Pajemploi.",
+            "message": "L'inscription au site internet n'est pas effective"
+        }
+    ],
+    "verificationEnfantPe": [
+        {
+            "inputEnfantPe": {
+                "dtNaissanceEnfant": "2015-01-12",
+                "nomEnfant": "L'HOMME",
+                "prenomEnfant": "JEAN-MICHEL"
+            },
+            "reponseStatutEnfant": 1
+        }
+    ]
+}

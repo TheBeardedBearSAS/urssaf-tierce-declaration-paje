@@ -1,0 +1,36 @@
+{
+    "cdModeCalcul": "R",
+    "inputDeclCommun": {
+        "dtDebutPeriode": "2020-01-01",
+        "dtFinPeriode": "2020-01-01",
+        "dtPaiementSalaire": "2020-01-01",
+        "mntAcompteSalarie": 0,
+        "mntIndemnitesKilometriques": 0,
+        "mntSalaireHoraireNet": 0,
+        "mntSalaireNetMensuel": 500,
+        "nbHeures": 100,
+        "nbHeuresSpecifiques": 0,
+        "nbJoursCongesPayes": 0
+    },
+    "inputDeclEnfant": [
+        {
+            "dtNaissanceEnfant": "2015-01-12",
+            "nomEnfant": "L'HOMME",
+            "prenomEnfant": "JEAN-MICHEL"
+        }
+    ],
+    "inputSp": {
+        "dtNaissanceSalarie": "1980-01-30",
+        "numeroPajeSalarie": "Y2926822480004"
+    },
+    "finDeContrat": {
+        "mntIndDepartRetraite": 0,
+        "mntIndCcp": 0,
+        "mntIndPreavis": 0,
+        "mntIndPrecarite": 0,
+        "mntIndLicenciement": 0
+    },
+    "mntFraisTransport": 0,
+    "nbHrSupMajA25": 0,
+    "nbHrSupMajA50": 0
+}

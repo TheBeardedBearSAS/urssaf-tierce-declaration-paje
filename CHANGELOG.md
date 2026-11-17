@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Wire layer (`src/Infrastructure/Urssaf/Wire`): request and response mappers of the 12 operations (query, path and
+  body parameters, `{}` bodies, amounts as 2-decimal JSON literals, strict dates), error payload parsing (array or
+  single object, trimmed codes), `ApiErrorCode` catalogue and classification into `RejectionKind`, non-blocking
+  messages.
+- Benchmarks (`tests/Benchmark`): validation, wire encoding and decoding of the official examples (`make bench`).
 - Domain model (`src/Domain`): identifiers (Pajemploi employer and employee numbers, NIR), employer reference,
   employee identification sum type (by number, by NIR, by administrative data), address, children, AMA and GED
   declarations with their contract ends, estimate requests, results (amounts, withholding tax, child checks,

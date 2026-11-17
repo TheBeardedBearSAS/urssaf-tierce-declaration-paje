@@ -35,3 +35,21 @@ with 4 or 5 digits in the PDF (§5).
 
 - The Application never compares a wire string; adding a code is an Infrastructure change.
 - The 4- / 5-digit tolerance is removed once a contract test proves the actual spelling.
+
+## Amendment (2026-11-17, lead-accepted, lot 2)
+
+- `RejectionKind` gains `employee_birth_date_mismatch` (`ER_API_021_0010`). `birth_date_mismatch` now means only
+  `ER_API_020_0000`: the birth date of the **employer** reference, which the application takes from persisted
+  credentials. The employee mismatch is an input problem of the host and is handled apart. The kind sits right after
+  `birth_date_mismatch` in the priority order.
+- `ER_API_DECLA_0002` (limit of declarations for non-certified employees) is a `business_rule`, no longer a
+  `declaration_window`: it is not a matter of period.
+- `ErrorPayloadParser::parseBody()` (lenient) skips the entries of a list that are not objects instead of discarding the
+  whole body, so that one malformed entry never hides a duplicate-declaration code. `parsePayload()` stays strict.
+- Non-blocking codes go through the same normalisation as error codes (inner whitespace removed).
+
+## Amendment (2026-11-17, lead-accepted, lot 2)
+
+- `ERREUR_TECHNIQUE` (HTTP 400, computed hourly rate of 100 EUR or more on 045 / 046 / 050 / 051, api-reference §1.2 and
+  §3.6) is a `business_rule`, no longer `technical`: it is a deterministic rejection of the input, so retrying the same
+  request can never succeed and it is never retried. Only `ERR_TECHNIQUE` (HTTP 500) stays `technical`.

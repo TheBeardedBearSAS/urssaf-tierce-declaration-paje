@@ -94,6 +94,9 @@ step 4 below, with the Application commands.
 2. Wire mappers + fixtures (requests and responses of the 12 operations, error payloads).
 3. HTTP gateway (OAuth2, error parsing, 429 / 503 handling, no retry on `declare*`).
 4. Application commands and queries: mandate, verifications, association, estimates, pre-declaration, declaration.
+   - Binding (ADR 0009 amendment): the association command (023) with `EmployeeByAdministrativeData` requires a non-empty
+     `EmployeeCreation::identity()` (the identity is the only matching data, it is not sent in the query), with a stable
+     violation code. `AssociateEmployeeRequestMapper` does not enforce it.
 5. Symfony bridge.
 6. Doctrine bridge (employers, mandates, declarations tracking).
 7. Contract tests, then remove the open points from `api-reference.md`.

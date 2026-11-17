@@ -27,3 +27,9 @@ says the mapper must refuse.
 - No `T00:00:00Z` on the wire; the reference `DateEncoding` is not reused as is.
 - A response of 050 / 051 carrying an invalid date cannot be read: it becomes an unknown outcome (ADR 0003), never a
   silent success.
+
+## Amendment (2026-11-17, lead-accepted, lot 2)
+
+- Only the placeholders of **date** fields are refused. The placeholders of free-text fields (for example
+  `numeroPajeSalarie` = `"string"` in the official 021 response) are kept raw: the mapper does not guess which text is
+  a placeholder.

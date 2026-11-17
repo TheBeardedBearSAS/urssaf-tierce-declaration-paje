@@ -15,6 +15,7 @@ use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\Command\WorkflowSt
 use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\Diagnostic\AuthenticationCheck;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\Diagnostic\ConfigurationCheck;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\Diagnostic\CredentialsCheck;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\Diagnostic\DatabaseSchemaCheck;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\Diagnostic\InstallationCheck;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\Diagnostic\LockCheck;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\Diagnostic\PersistenceCheck;
@@ -49,6 +50,10 @@ final readonly class DiagnosticRegistrar
         $this->check($gatewayCheck, $gatewayArguments);
         $this->check(TokenStoreCheck::class, [$config['token_store']['service'], $config['token_store']['cache_pool']]);
         $this->check(PersistenceCheck::class, [$config['persistence']['driver']]);
+        if ($config['persistence']['driver'] === BundleConfiguration::DRIVER_DOCTRINE) {
+            $entityManager = $config['persistence']['entity_manager'];
+            $this->check(DatabaseSchemaCheck::class, [new Reference(ServiceIds::entityManager($entityManager)), $entityManager]);
+        }
         $this->check(LockCheck::class, [new Reference(OperationLocks::class)]);
 
         $this->services->set(CheckInstallationCommand::class)

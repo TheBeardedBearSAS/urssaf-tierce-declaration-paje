@@ -34,6 +34,8 @@ use TheBeardedBear\UrssafTierceDeclarationPaje\Application\Query\GetEmployerAcco
 use TheBeardedBear\UrssafTierceDeclarationPaje\Application\Query\GetWorkflowOverview;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Application\Query\PreDeclareSalary;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Application\Query\VerifyEmployer;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Doctrine\Repository\DoctrineEmployerAccountRepository;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Doctrine\Repository\DoctrineOutbox;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Declaration\DeclarationState;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Shared\ExternalReference;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Infrastructure\Event\InMemoryEventPublisher;
@@ -50,6 +52,7 @@ use TheBeardedBear\UrssafTierceDeclarationPaje\Infrastructure\Urssaf\UrssafHttpG
 use TheBeardedBear\UrssafTierceDeclarationPaje\Standalone\UrssafTierceDeclarationPaje;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Standalone\UrssafTierceDeclarationPajeBuilder;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Testing\SimulatedPajeGateway;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Functional\Doctrine\Support\TestDatabase;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Unit\Application\Fake\FixedClock;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Unit\Application\Fake\RecordingIntegrationEventSink;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Unit\Application\Fake\SequentialIdGenerator;
@@ -284,6 +287,31 @@ final class UrssafTierceDeclarationPajeBuilderTest extends TestCase
         $package->importEmployer()(new ImportEmployer(SimulatorSamples::tenant(), ExternalReference::fromString('employer-1'), SimulatorSamples::employer()));
 
         static::assertNotNull($accounts->findByExternalReference(SimulatorSamples::tenant(), ExternalReference::fromString('employer-1')));
+    }
+
+    public function testTheDoctrinePersistenceIsUsedWithItsStatisticsAndItsOutbox(): void
+    {
+        $entityManager = TestDatabase::entityManager();
+        $sink = new RecordingIntegrationEventSink();
+        $package = self::builder()
+            ->withGateway(SimulatorSamples::gateway())
+            ->withDoctrine($entityManager)
+            ->withOutbox(new DoctrineOutbox($entityManager), $sink)
+            ->build();
+        $tenant = SimulatorSamples::tenant();
+        $reference = ExternalReference::fromString('employer-1');
+
+        $imported = $package->importEmployer()(new ImportEmployer($tenant, $reference, SimulatorSamples::employer()));
+        $package->registerMandate()(new RegisterMandate($tenant, EmployerSelector::byExternalReference($reference)));
+        $entityManager->clear();
+
+        $stored = (new DoctrineEmployerAccountRepository($entityManager))->findByExternalReference($tenant, $reference);
+        static::assertNotNull($stored);
+        static::assertSame($imported->accountId, $stored->id()->value());
+        static::assertSame(1, $package->getWorkflowOverview()(GetWorkflowOverview::forTenant($tenant))[0]->mandates['registered']);
+        $relay = $package->relayOutbox()(new RelayOutbox(null));
+        static::assertGreaterThan(0, $relay->dispatched);
+        static::assertCount($relay->dispatched, $sink->deliveredIds());
     }
 
     public function testTheOverviewNeedsStatistics(): void

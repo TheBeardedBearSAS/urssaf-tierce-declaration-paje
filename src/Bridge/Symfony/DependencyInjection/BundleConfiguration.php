@@ -15,8 +15,8 @@ use TheBeardedBear\UrssafTierceDeclarationPaje\Infrastructure\Urssaf\ApiConfigur
  * Configuration tree of the "urssaf_tierce_declaration_paje" bundle configuration (ADR 0013).
  *
  * The default persistence driver is "doctrine" when doctrine/orm is installed, "in_memory" otherwise; the "doctrine"
- * driver is refused at build time until the Doctrine bridge ships (ADR 0014, amendment of ADR 0013), so a host that
- * has the ORM installed must choose "in_memory" or "custom" explicitly.
+ * driver fails at build time without DoctrineBundle (ADR 0013 decision 3, ADR 0014), checked by the bundle while the
+ * container is prepared.
  */
 final class BundleConfiguration
 {
@@ -73,12 +73,6 @@ final class BundleConfiguration
             ->validate()
                 ->ifTrue(ConfigurationRules::duplicateHeaderNames(...))
                 ->thenInvalid('"request_id_header" and "application_id_header.name" must be different headers.')
-            ->end()
-            // On the root, not on the driver node: the validation of a node does not run on its default value, and the
-            // default driver is "doctrine" when the ORM is installed.
-            ->validate()
-                ->ifTrue(ConfigurationRules::doctrineDriverSelected(...))
-                ->thenInvalid('The "doctrine" persistence driver is not available yet (the Doctrine bridge is not part of this version): set "persistence.driver" to "in_memory" or "custom".')
             ->end()
             ->validate()
                 ->ifTrue(ConfigurationRules::staleSubmissionNotAboveHttpTimeout(...))
@@ -289,13 +283,16 @@ final class BundleConfiguration
                 ->enumNode('driver')
                     ->values([self::DRIVER_IN_MEMORY, self::DRIVER_DOCTRINE, self::DRIVER_CUSTOM])
                     ->defaultValue(self::defaultDriver())
-                    ->info('"doctrine" when doctrine/orm is installed, else "in_memory" (tests and prototypes). The Doctrine bridge is not available yet: choose "in_memory" or "custom".')
+                    ->info('"doctrine" when doctrine/orm is installed, else "in_memory" (tests and prototypes).')
                 ->end()
                 ->scalarNode('employer_account_repository')->defaultNull()->info('Service id of your EmployerAccountRepository (driver "custom").')->end()
                 ->scalarNode('mandate_repository')->defaultNull()->info('Service id of your MandateRepository (driver "custom").')->end()
                 ->scalarNode('declaration_record_repository')->defaultNull()->info('Service id of your DeclarationRecordRepository (driver "custom").')->end()
                 ->scalarNode('transaction_manager')->defaultNull()->info('Service id of your TransactionManager shared with the repositories (driver "custom"; default: ImmediateTransactionManager).')->end()
                 ->scalarNode('workflow_statistics')->defaultNull()->info('Service id of your WorkflowStatistics (driver "custom", optional: without it, GetWorkflowOverviewHandler and urssaf:paje:status are not available).')->end()
+                ->scalarNode('entity_manager')->defaultValue('default')->cannotBeEmpty()
+                    ->info('Name of the Doctrine entity manager (driver "doctrine"). Use a DEDICATED entity manager (own connection) for this package: its repositories flush the whole unit of work of the entity manager they use, which would also write pending changes of the host entities sharing it.')
+                ->end()
             ->end();
 
         return $node;

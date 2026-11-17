@@ -60,7 +60,7 @@ Doctrine bridges, 100 % coverage and MSI).
 - Symfony bundle `UrssafTierceDeclarationPajeBundle` (alias `urssaf_tierce_declaration_paje`): configuration
   (credentials, environment, base URI), HTTP client, token cache pool, console commands (e.g.
   `urssaf:paje:verify-employer`, `urssaf:paje:estimate`, `urssaf:paje:predeclare`).
-- Doctrine bridge: persistence of the employers (number, mandate state), mandates (registered / cancelled, platform
+- Doctrine bridge (available, `docs/doctrine.md`): persistence of the employers (number, mandate state), mandates (registered / cancelled, platform
   side) and declarations (period, employee, result amounts, `referenceDocumentaire`, status) to track what was sent and
   protect against double declaration. Entities and mappings stay in the bridge, the domain stays framework-free.
 

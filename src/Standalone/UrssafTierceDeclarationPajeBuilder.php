@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TheBeardedBear\UrssafTierceDeclarationPaje\Standalone;
 
 use Closure;
+use Doctrine\ORM\EntityManagerInterface;
 use LogicException;
 use Psr\Log\LoggerInterface;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Application\Policy\WorkflowPolicy;
@@ -22,6 +23,11 @@ use TheBeardedBear\UrssafTierceDeclarationPaje\Application\Port\WorkflowStatisti
 use TheBeardedBear\UrssafTierceDeclarationPaje\Application\Service\IgnoredFailures;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Application\Service\IgnoredOutbox;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Application\Service\UnitOfWork;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Doctrine\DoctrineTransactionManager;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Doctrine\Repository\DoctrineDeclarationRecordRepository;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Doctrine\Repository\DoctrineEmployerAccountRepository;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Doctrine\Repository\DoctrineMandateRepository;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Doctrine\Repository\DoctrineWorkflowStatistics;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Declaration\DeclarationRecordRepository;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Employer\EmployerAccountRepository;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Mandate\MandateRepository;
@@ -44,8 +50,8 @@ use TheBeardedBear\UrssafTierceDeclarationPaje\Infrastructure\Urssaf\UtcSystemCl
 /**
  * Wires the package without a framework. Every "with" method returns a new builder.
  *
- * Defaults: in-memory repositories, statistics and token store (tests and prototypes: give your own repositories and a
- * shared token store in production), the UTC system clock, random UUIDs, no event publisher, no outbox, the default
+ * Defaults: in-memory repositories, statistics and token store (tests and prototypes: use withDoctrine() or your own
+ * repositories, and a shared token store in production), the UTC system clock, random UUIDs, no event publisher, no outbox, the default
  * workflow policy, the HTTP gateway of {@see UrssafGatewayFactory}.
  *
  * One property and one "with" method per collaborator, hence the counts.
@@ -177,6 +183,23 @@ final class UrssafTierceDeclarationPajeBuilder
             $builder->transactions = $transactions;
             $builder->statistics = $statistics;
         });
+    }
+
+    /**
+     * The Doctrine persistence of the package, on a dedicated entity manager (docs/doctrine.md): repositories,
+     * transaction manager and workflow statistics. The outbox is separate: withOutbox(new DoctrineOutbox($entityManager), $sink).
+     *
+     * ADR 0014.
+     */
+    public function withDoctrine(EntityManagerInterface $entityManager): self
+    {
+        return $this->withRepositories(
+            new DoctrineEmployerAccountRepository($entityManager),
+            new DoctrineMandateRepository($entityManager),
+            new DoctrineDeclarationRecordRepository($entityManager),
+            new DoctrineTransactionManager($entityManager),
+            new DoctrineWorkflowStatistics($entityManager),
+        );
     }
 
     /**

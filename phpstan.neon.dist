@@ -44,6 +44,9 @@ parameters:
                 - TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Exception\DomainException
                 # Common properties of the public integration events (scalar, readonly, rebuilt by named arguments).
                 - TheBeardedBear\UrssafTierceDeclarationPaje\Contract\Event\IntegrationEvent
+                # DBAL decorator bases (documented extension points), used by the test middleware that observes statements.
+                - Doctrine\DBAL\Driver\Middleware\AbstractDriverMiddleware
+                - Doctrine\DBAL\Driver\Middleware\AbstractConnectionMiddleware
                 # Framework extension points without an interface alternative (bridges only).
                 - Doctrine\DBAL\Types\Type
                 - Symfony\Component\HttpKernel\Bundle\AbstractBundle
@@ -56,6 +59,9 @@ parameters:
                 - TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Employer\EmployerAccount
                 - TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Mandate\Mandate
                 - TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Declaration\DeclarationRecord
+                # Doctrine bridge entities (ADR 0014): read-only, written with DBAL, proxied like the aggregates.
+                - TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Doctrine\Entity\OutboxMessage
+                - TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Doctrine\Entity\ActiveMandate
         # Disabled rules (DDD value objects / domain model), each one justified:
         # Optional value-object arguments and "withX" factories legitimately default (e.g. currency, locale).
         noConstructorParameterWithDefaultValue:

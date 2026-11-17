@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Functional\Symfony\Support;
 
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Tools\SchemaTool;
 use Http\Mock\Client;
 use Psr\Container\ContainerInterface;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Component\Clock\MockClock;
 use Symfony\Component\Console\Tester\CommandTester;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\DependencyInjection\ServiceIds;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Functional\Symfony\App\TestKernel;
 use Throwable;
 
@@ -34,12 +37,13 @@ final readonly class Harness
     }
 
     /**
-     * @param array<string, mixed> $config "urssaf_tierce_declaration_paje" configuration merged over the defaults
+     * @param array<string, mixed>      $config   "urssaf_tierce_declaration_paje" configuration merged over the defaults
+     * @param bool|array<string, mixed> $doctrine true for DoctrineBundle on an in-memory SQLite, or its configuration
      */
-    public static function boot(array $config = [], bool $messenger = false, bool $lock = false): self
+    public static function boot(array $config = [], bool $messenger = false, bool $lock = false, bool|array $doctrine = false): self
     {
         $handlers = PhpHandlerGuard::install();
-        $kernel = new TestKernel($config, $messenger, $lock);
+        $kernel = new TestKernel($config, $messenger, $lock, $doctrine);
         try {
             $kernel->boot();
         } catch (Throwable $failure) {
@@ -107,5 +111,22 @@ final readonly class Harness
         $application = new Application($this->kernel);
 
         return new CommandTester($application->find($name));
+    }
+
+    /**
+     * Creates the database schema of the Doctrine entity manager (Doctrine persistence only).
+     */
+    public function createDatabaseSchema(): void
+    {
+        $this->createDatabaseSchemaOf('default');
+    }
+
+    /**
+     * Creates the database schema of a named Doctrine entity manager.
+     */
+    public function createDatabaseSchemaOf(string $entityManagerName): void
+    {
+        $entityManager = $this->privateService(ServiceIds::entityManager($entityManagerName), EntityManagerInterface::class);
+        (new SchemaTool($entityManager))->createSchema($entityManager->getMetadataFactory()->getAllMetadata());
     }
 }

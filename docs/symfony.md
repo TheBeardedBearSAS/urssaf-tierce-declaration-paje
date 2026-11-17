@@ -81,11 +81,12 @@ The configuration tree is defined in `Bridge\Symfony\DependencyInjection\BundleC
 | `workflow.max_page_size` | int >= 1 | `1000` | Upper bound of the records loaded by a batch use case. |
 | `workflow.erasure.allow_unknown_outcomes` | bool | `false` | Default of `ForgetEmployer` for declarations whose outcome is unknown: refused when `false` ([ADR 0015](adr/0015-employer-erasure.md)). A submission in flight is always refused. |
 | `workflow.erasure.allow_active_mandate` | bool | `false` | Default of `ForgetEmployer` for an employer whose mandate is still active (it stays active at URSSAF): refused when `false`. |
-| `persistence.driver` | enum `in_memory` \| `custom` \| `doctrine` | `doctrine` if `doctrine/orm` is installed, else `in_memory` | Persistence adapter. **`doctrine` is refused for now** (the Doctrine bridge, [ADR 0014](adr/0014-doctrine-bridge.md), comes later): a host with the ORM installed must choose `in_memory` or `custom` explicitly. `in_memory` is for tests and prototypes. |
+| `persistence.driver` | enum `in_memory` \| `custom` \| `doctrine` | `doctrine` if `doctrine/orm` is installed, else `in_memory` | Persistence adapter. `doctrine` needs DoctrineBundle (the container build fails without it) and the schema is yours ([doctrine.md](doctrine.md)); `in_memory` is for tests and prototypes. |
 | `persistence.employer_account_repository` | string \| null | `null` | Service id of your `EmployerAccountRepository` (driver `custom`). |
 | `persistence.mandate_repository` | string \| null | `null` | Service id of your `MandateRepository` (driver `custom`). |
 | `persistence.declaration_record_repository` | string \| null | `null` | Service id of your `DeclarationRecordRepository` (driver `custom`). |
 | `persistence.transaction_manager` | string \| null | `null` | Service id of your `TransactionManager`, shared with your repositories (driver `custom`; default `ImmediateTransactionManager`). |
+| `persistence.entity_manager` | string | `default` | Name of the Doctrine entity manager (driver `doctrine`). Use a dedicated one ([doctrine.md](doctrine.md)): the package mapping is attached to it only. |
 | `persistence.workflow_statistics` | string \| null | `null` | Service id of your `WorkflowStatistics` (driver `custom`, optional: without it `GetWorkflowOverviewHandler` and `urssaf:paje:status` are not registered). |
 | `messenger.enabled` | bool | `false` | Registers the Messenger handlers of [Messenger](#messenger). |
 | `messenger.bus` | string | `messenger.default_bus` | Bus used by `urssaf:paje:employers:sync-status --async`. |
@@ -106,7 +107,7 @@ Validation rules enforced at container build time:
   repository service ids.
 - `lock.enabled: true` requires `symfony/lock`; `scheduler.enabled: true` requires `symfony/scheduler`.
 - `workflow.default_page_size` must not exceed `workflow.max_page_size`.
-- `persistence.driver: doctrine` is refused (including when it is the default).
+- `persistence.driver: doctrine` (including when it is the default) needs DoctrineBundle to be registered: the container build fails with a `LogicException` otherwise.
 - `request_id_header` and `application_id_header.name` must be different headers; `application_id_header` needs both
   `name` and `value`, or neither.
 - `retry_safe_writes` only accepts `"023"`, `"030"` and `"031"`.
@@ -145,7 +146,10 @@ request a token per run. Tokens are secrets: do not expose the pool through a ca
   `declaration_record_repository`. Give the `transaction_manager` they share: with the outbox, the integration events are
   written in the transaction of the state change ([ADR 0012](adr/0012-integration-events.md)), which an
   `ImmediateTransactionManager` (the default) cannot guarantee. `workflow_statistics` is optional.
-- `doctrine`: not available yet (see the reference above).
+- `doctrine`: the Doctrine bridge ([doctrine.md](doctrine.md), [ADR 0014](adr/0014-doctrine-bridge.md)). The bundle prepends the
+  mapping and the DBAL types to the `doctrine` configuration (to the entity manager named by `entity_manager` only, when it is
+  not `default`), and registers the repositories, the transaction manager, the statistics and, when the outbox is enabled
+  without `outbox.service`, the `DoctrineOutbox`, all on that entity manager.
 
 ## Console commands
 
@@ -220,9 +224,10 @@ view: it reads the local store only and never calls URSSAF.
 | `authentication` | failure: URSSAF refuses the credentials or cannot be reached. A new access token is requested for every tenant (any cached one is ignored), the tokens of the application are not touched. Skipped with `--skip-remote`; replaced by a `gateway` warning when `gateway.simulated` is enabled |
 | `token store` | warning: the tokens are stored in `cache.app` instead of a dedicated pool |
 | `persistence` | warning: `in_memory` persistence (every record is lost when the process ends) |
+| `database schema` | `doctrine` driver only. Failure: schema changes are pending on the package tables (run `doctrine:migrations:diff` then `doctrine:migrations:migrate`). Warning: the `default` entity manager is shared with the application |
 | `lock` | warning: the lock is disabled or `symfony/lock` is missing |
 
-The database schema check of the `doctrine` driver comes with the Doctrine bridge. Add checks of your own by
+Add checks of your own by
 implementing `Bridge\Symfony\Diagnostic\InstallationCheck` (autoconfigured, tag
 `urssaf_tierce_declaration_paje.installation_check`): they run after the package checks, unless their tag has a positive
 `priority`.
@@ -388,6 +393,27 @@ get translated messages.
 
 ## Doctrine
 
-The Doctrine bridge ([ADR 0014](adr/0014-doctrine-bridge.md)) is not part of this release of the bundle: the `doctrine`
-persistence driver is refused. Until then, implement the three repositories and the transaction manager yourself (driver
-`custom`).
+The `doctrine` driver ([ADR 0014](adr/0014-doctrine-bridge.md), full guide in [doctrine.md](doctrine.md)) is the default when
+`doctrine/orm` is installed. It requires DoctrineBundle; the package ships no migration (generate it with
+`doctrine:migrations:diff`, `urssaf:paje:check` reports the pending changes).
+
+```yaml
+doctrine:
+    dbal:
+        connections:
+            default: { url: '%env(resolve:DATABASE_URL)%' }
+            urssaf_paje: { url: '%env(resolve:URSSAF_PAJE_DATABASE_URL)%' }
+    orm:
+        entity_managers:
+            default: { connection: default }
+            urssaf_paje: { connection: urssaf_paje }   # dedicated: the bundle maps the package entities here
+
+urssaf_tierce_declaration_paje:
+    persistence: { driver: doctrine, entity_manager: urssaf_paje }
+    outbox: { enabled: true }                           # DoctrineOutbox on the same entity manager
+```
+
+The repositories flush the whole unit of work of the entity manager they use on every save, so a dedicated entity manager
+is strongly recommended. A lost optimistic lock is reported as `employer_account.concurrent_modification`,
+`mandate.concurrent_modification` or `declaration_record.concurrent_modification` (translated with the other violation
+codes).

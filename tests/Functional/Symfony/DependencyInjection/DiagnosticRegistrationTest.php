@@ -15,6 +15,7 @@ use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\DependencyInjectio
 use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\Diagnostic\AuthenticationCheck;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\Diagnostic\ConfigurationCheck;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\Diagnostic\CredentialsCheck;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\Diagnostic\DatabaseSchemaCheck;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\Diagnostic\LockCheck;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\Diagnostic\PersistenceCheck;
 use TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\Diagnostic\SimulatedGatewayCheck;
@@ -37,6 +38,23 @@ final class DiagnosticRegistrationTest extends TestCase
             [ConfigurationCheck::class, CredentialsCheck::class, AuthenticationCheck::class, TokenStoreCheck::class, PersistenceCheck::class, LockCheck::class],
             $tagged,
         );
+    }
+
+    public function testTheDatabaseSchemaCheckFollowsThePersistenceCheckWithTheDoctrineDriver(): void
+    {
+        $container = (new TestKernel(['persistence' => ['driver' => 'doctrine', 'entity_manager' => 'urssaf']], false, false, [
+            'dbal' => ['connections' => ['default' => ['driver' => 'pdo_sqlite', 'memory' => true]]],
+            'orm' => ['enable_lazy_ghost_objects' => true, 'entity_managers' => ['urssaf' => ['connection' => 'default']]],
+        ]))->definitions();
+
+        $tagged = array_keys($container->findTaggedServiceIds(ServiceIds::TAG_INSTALLATION_CHECK));
+
+        static::assertSame(
+            [ConfigurationCheck::class, CredentialsCheck::class, AuthenticationCheck::class, TokenStoreCheck::class, PersistenceCheck::class, DatabaseSchemaCheck::class, LockCheck::class],
+            $tagged,
+        );
+        static::assertSame(['doctrine'], $container->getDefinition(PersistenceCheck::class)->getArguments());
+        static::assertEquals([new Reference('doctrine.orm.urssaf_entity_manager'), 'urssaf'], $container->getDefinition(DatabaseSchemaCheck::class)->getArguments());
     }
 
     public function testTheChecksReceiveTheirCollaborators(): void

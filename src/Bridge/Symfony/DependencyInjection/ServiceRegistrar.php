@@ -36,7 +36,7 @@ use Symfony\Component\DependencyInjection\Loader\Configurator\ServicesConfigurat
  *     outbox: array{enabled: bool, service: ?string, sink: string, bus: string, retention: string},
  *     scheduler: array{enabled: bool, name: string, frequencies: array<string, ?string>},
  *     workflow: array{business_timezone: string, stale_submission_after: string, max_submission_attempts: int, require_local_mandate: bool, predeclare_before_declaring: bool, default_page_size: int, max_page_size: int, erasure: array{allow_unknown_outcomes: bool, allow_active_mandate: bool}},
- *     persistence: array{driver: string, employer_account_repository: ?string, mandate_repository: ?string, declaration_record_repository: ?string, transaction_manager: ?string, workflow_statistics: ?string},
+ *     persistence: array{driver: string, employer_account_repository: ?string, mandate_repository: ?string, declaration_record_repository: ?string, transaction_manager: ?string, workflow_statistics: ?string, entity_manager: string},
  *     messenger: array{enabled: bool, bus: string}
  * }
  */

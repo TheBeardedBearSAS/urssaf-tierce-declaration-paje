@@ -33,12 +33,22 @@ Every `with...()` method returns a new builder (the builder is never modified):
 | `withRateLimiter(RateLimiter)` | `SlidingWindowRateLimiter` | The HTTP gateway enforces the URSSAF quota in the process; `NoopRateLimiter` disables it ([ADR 0011](adr/0011-quotas-and-rate-limit.md)). |
 | `withPolicy(WorkflowPolicy)` | defaults | Page sizes, stale submission delay (must exceed the HTTP client timeout), attempts, business time zone, mandate guard, pre-declaration check, erasure opt-ins, outbox retention. |
 | `withRepositories($accounts, $mandates, $declarations, $transactions, ?$statistics)` | in-memory | Your own persistence; without statistics `getWorkflowOverview()` throws. |
+| `withDoctrine(EntityManagerInterface)` | in-memory | The Doctrine persistence of the package on a **dedicated** entity manager ([doctrine.md](doctrine.md)): repositories, `DoctrineTransactionManager` and `DoctrineWorkflowStatistics`. The outbox is separate (below). |
 | `withOutbox(Outbox, IntegrationEventSink)` | no outbox | Integration events ([integration-events.md](integration-events.md)); `relayOutbox()` needs it. |
 | `withGateway(PajeGateway)` | HTTP gateway | For instance the `Testing\SimulatedPajeGateway` in tests. **Refused with `Environment::Production`** (`LogicException`): nothing but the HTTP gateway talks for a real employer. |
 
 The defaults (in-memory repositories, statistics and token store) are meant for tests and prototypes: they live and die
-with the process. In production, give your own repositories and a token store shared by every process. The
-Doctrine persistence of the package (`withDoctrine()`) comes with the Doctrine bridge, not yet available.
+with the process. In production, use `withDoctrine()` or your own repositories, and a token store shared by every process.
+
+```php
+$package = UrssafTierceDeclarationPajeBuilder::create($transport, $credentials, $configuration)
+    ->withDoctrine($entityManager)                              // dedicated entity manager, schema created by your migrations
+    ->withOutbox(new DoctrineOutbox($entityManager), $sink)     // optional: events written in the transaction of the state change
+    ->build();
+```
+
+Register the types and the mapping first (`DoctrineIntegration::registerTypes()` and `DoctrineIntegration::mappingDriver()`,
+see [doctrine.md](doctrine.md)); `withDoctrine()` does not touch the entity manager configuration.
 
 ## Declaring a salary
 

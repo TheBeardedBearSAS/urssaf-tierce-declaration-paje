@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <!-- Employer account: the local follow-up of a Pajemploi employer (ADR 0006, 0010). The employer identification and
+         the tracking are embedded as columns; the last method 020 answer is a JSON column (a nullable group cannot be an
+         embeddable). One account per employer number and per external reference in a tenant. "version" is the optimistic
+         lock token of the persistence layer, not a domain concept. -->
+    <entity name="TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Employer\EmployerAccount" table="urssaf_paje_employer_accounts">
+        <unique-constraints>
+            <unique-constraint name="uniq_urssaf_paje_employer_number" columns="tenant_id,employer_number"/>
+            <unique-constraint name="uniq_urssaf_paje_employer_external_reference" columns="tenant_id,external_reference"/>
+        </unique-constraints>
+        <indexes>
+            <index name="idx_urssaf_paje_employer_checked" columns="tenant_id,last_checked_at"/>
+            <index name="idx_urssaf_paje_employer_stage" columns="tenant_id,stage"/>
+        </indexes>
+        <id name="id" type="urssaf_paje_employer_account_id" column="id" length="64">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="version" type="integer" version="true"/>
+        <field name="tenantId" type="urssaf_paje_tenant_id" column="tenant_id" length="64"/>
+        <field name="externalReference" type="urssaf_paje_external_reference" column="external_reference" length="191"/>
+        <field name="origin" type="string" column="origin" length="16" enum-type="TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Employer\EmployerOrigin"/>
+        <field name="createdAt" type="urssaf_paje_instant" column="created_at"/>
+        <embedded name="employer" class="TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Employer\EmployerReference" use-column-prefix="false"/>
+        <embedded name="tracking" class="TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Employer\EmployerTracking" use-column-prefix="false"/>
+    </entity>
+</doctrine-mapping>

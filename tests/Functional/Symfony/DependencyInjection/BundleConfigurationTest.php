@@ -47,6 +47,7 @@ final class BundleConfigurationTest extends TestCase
                     'declaration_record_repository' => null,
                     'transaction_manager' => null,
                     'workflow_statistics' => null,
+                    'entity_manager' => 'default',
                 ],
                 'base_uri' => null,
                 'user_agent' => 'thebeardedbear-urssaf-tierce-declaration-paje',

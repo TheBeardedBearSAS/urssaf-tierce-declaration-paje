@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Functional\Symfony\DependencyInjection;
 
+use LogicException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
@@ -56,7 +57,6 @@ final class BundleConfigurationValidationTest extends TestCase
         ];
         yield 'custom driver without repositories' => [['persistence' => ['driver' => 'custom']], 'The "custom" driver requires "employer_account_repository", "mandate_repository" and "declaration_record_repository".'];
         yield 'custom driver with one repository' => [['persistence' => ['driver' => 'custom', 'employer_account_repository' => 'a']], 'The "custom" driver requires "employer_account_repository"'];
-        yield 'doctrine driver refused for now' => [['persistence' => ['driver' => 'doctrine']], 'The "doctrine" persistence driver is not available yet (the Doctrine bridge is not part of this version): set "persistence.driver" to "in_memory" or "custom".'];
         yield 'default page above max' => [['workflow' => ['default_page_size' => 200, 'max_page_size' => 100]], '"default_page_size" must not be greater than "max_page_size".'];
         yield 'same header names' => [['request_id_header' => 'X-Id', 'application_id_header' => ['name' => 'x-id', 'value' => 'v']], '"request_id_header" and "application_id_header.name" must be different headers.'];
         yield 'header name only' => [['application_id_header' => ['name' => 'X-Application']], '"application_id_header" needs both "name" and "value", or neither.'];
@@ -106,6 +106,14 @@ final class BundleConfigurationValidationTest extends TestCase
         yield 'empty client secret' => [['credentials' => ['tenant-1' => ['client_id' => 'x', 'client_secret' => '']]], 'client_secret'];
         yield 'foster carer option of another package' => [['workflow' => ['allow_foster_carer_declarations' => true]], 'allow_foster_carer_declarations'];
         yield 'agreement encoding of another package' => [['agreement_encoding' => 'numeric'], 'agreement_encoding'];
+    }
+
+    public function testTheDoctrineDriverNeedsDoctrineBundle(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('The "doctrine" persistence driver requires DoctrineBundle (doctrine/doctrine-bundle): register it, or set "persistence.driver" to "in_memory" or "custom".');
+
+        Harness::boot(['persistence' => ['driver' => 'doctrine']]);
     }
 
     public function testTheEnvironmentIsRequired(): void

@@ -170,18 +170,13 @@ final class ConfigurationRules
     }
 
     /**
-     * The "doctrine" driver is selectable in the tree (ADR 0013) but its bridge is not part of this version (ADR 0014,
-     * a later lot): it is refused at build time rather than failing at the first query. Checked on the whole
-     * configuration, so that the default driver ("doctrine" when the ORM is installed) is refused too.
-     *
-     * @param array<array-key, mixed> $value
+     * The "doctrine" driver needs DoctrineBundle (its entity manager services), checked by the bundle while the
+     * container is prepared (the per-extension container used when loading cannot tell whether a bundle is registered),
+     * ADR 0013 decision 3.
      */
-    public static function doctrineDriverSelected(array $value): bool
+    public static function doctrineDriverWithoutBundle(string $driver, bool $bundleRegistered): bool
     {
-        /** @var array{persistence: array{driver: string}} $config */
-        $config = $value;
-
-        return $config['persistence']['driver'] === BundleConfiguration::DRIVER_DOCTRINE;
+        return $driver === BundleConfiguration::DRIVER_DOCTRINE && !$bundleRegistered;
     }
 
     /**

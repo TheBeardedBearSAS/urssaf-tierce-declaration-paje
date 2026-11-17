@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <!-- Identification of an employer in every call: employer number and birth date (personal data, ADR 0007: its own
+         type, so that an application can encrypt it). Embedded by the employer account and by the mandate, which both
+         keep the birth date (ADR 0007, lot 4a amendment). -->
+    <embeddable name="TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Employer\EmployerReference">
+        <field name="number" type="urssaf_paje_employer_number" column="employer_number" length="14"/>
+        <field name="birthDate" type="urssaf_paje_birth_date" column="birth_date"/>
+    </embeddable>
+</doctrine-mapping>

@@ -27,6 +27,8 @@
         "Doctrine\\ORM\\Configuration",
         "Doctrine\\ORM\\EntityManagerInterface",
         "Doctrine\\ORM\\Mapping\\Driver\\SimplifiedXmlDriver",
+        "Doctrine\\ORM\\OptimisticLockException",
+        "Doctrine\\ORM\\Tools\\SchemaTool",
         "Symfony\\Component\\Clock\\NativeClock",
         "Symfony\\Component\\Config\\Definition\\Builder\\ArrayNodeDefinition",
         "Symfony\\Component\\Config\\Definition\\Builder\\ScalarNodeDefinition",

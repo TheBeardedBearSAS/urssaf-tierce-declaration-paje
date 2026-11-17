@@ -147,3 +147,21 @@ status polling; several URSSAF packages can be installed in one application; som
   Doctrine bridge (lot 6).
 - The Flex recipe of the reference package is not shipped: the repository skeleton has no recipe tooling nor
   `flex-endpoint` CI job. Configuration is documented in `docs/symfony.md`; a recipe is a later addition.
+
+## Amendment (2026-11-17, lead-accepted, lot 6)
+
+- **The Doctrine driver is available.** The refusal of the lot 5 amendment is removed: `persistence.driver: doctrine` registers the
+  Doctrine repositories, `DoctrineTransactionManager` and `DoctrineWorkflowStatistics` on the entity manager named by the new
+  option `persistence.entity_manager` (default `default`, service id `ServiceIds::entityManager()` =
+  `doctrine.orm.<name>_entity_manager`), and, when the outbox is enabled without `outbox.service`, the `DoctrineOutbox` on the
+  same entity manager. The default driver stays `doctrine` when `doctrine/orm` is installed, `in_memory` otherwise.
+- **Fails at build without DoctrineBundle** (decision 3). The check runs in `prependExtension()`, which receives the real container
+  (`loadExtension()` only sees a per-extension container): it throws a `LogicException` when the selected driver, read from the raw
+  configurations (the default included), is `doctrine` and the `doctrine` extension is not registered. It is not a rule of the
+  configuration tree.
+- **Mapping.** With the `doctrine` driver and DoctrineBundle, `prependExtension()` prepends `DoctrineIntegration::doctrineBundleConfiguration()`
+  (DBAL types, XML mapping, native lazy objects on PHP 8.4+); with a non-default `entity_manager` the mapping is attached to that
+  entity manager only, so the host entities and the package entities never share a unit of work. The host configuration wins.
+- **`DatabaseSchemaCheck`** (`urssaf:paje:check`, `doctrine` driver): failure when the package tables (`urssaf_paje_` prefix) differ from the
+  mapping (the schema, the migrations, are the host's), warning when the `default` entity manager is shared with the application.
+  `PersistenceCheck` reports the `doctrine` driver as ok and points to it.

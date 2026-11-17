@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Doctrine bridge (ORM 3 / DBAL 4, SQLite in CI): XML mapping, `urssaf_paje_*` tables and DBAL types, repositories with
+  native optimistic locking (`*.concurrent_modification`), one-active-mandate key table, claim by atomic `UPDATE`, outbox,
+  workflow statistics, transaction manager and employer erasure; the birth date has its own type (encryption recipe) and no
+  NIR, employee or child name, nor address is stored. Symfony: `persistence.driver: doctrine` (default when `doctrine/orm`
+  is installed, fails at build without DoctrineBundle), `persistence.entity_manager`, mapping prepended to DoctrineBundle,
+  `database schema` diagnostic. Standalone: `withDoctrine()` (`docs/doctrine.md`).
 - Symfony bundle `UrssafTierceDeclarationPajeBundle` (alias `urssaf_tierce_declaration_paje`, Symfony 6.4 / 7.x):
   configuration with build-time rules, per-tenant credentials from `%env()%`, console commands `urssaf:paje:*`
   (hidden prompts for birth dates and NIR, payloads from a JSON file, no URSSAF description printed), Messenger employer

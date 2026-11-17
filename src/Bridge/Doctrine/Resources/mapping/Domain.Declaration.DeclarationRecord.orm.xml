@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <!-- Declaration record: the non-personal snapshot of a declaration and its submission status (ADR 0007: no NIR, name,
+         birth data, address, child data nor employee amount in the snapshot). The optional result and the list of errors
+         are JSON columns with explicit serializers. One record per external reference in a tenant. Every filtered or
+         sorted column is a real column (ADR 0014: no progress table). "version" is the optimistic lock token of the
+         persistence layer. -->
+    <entity name="TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Declaration\DeclarationRecord" table="urssaf_paje_declaration_records">
+        <unique-constraints>
+            <unique-constraint name="uniq_urssaf_paje_declaration_external_reference" columns="tenant_id,external_reference"/>
+        </unique-constraints>
+        <indexes>
+            <index name="idx_urssaf_paje_declaration_state" columns="tenant_id,state,updated_at"/>
+            <index name="idx_urssaf_paje_declaration_stale" columns="state,last_attempt_at"/>
+            <index name="idx_urssaf_paje_declaration_employer" columns="tenant_id,employer_number,state"/>
+        </indexes>
+        <id name="id" type="urssaf_paje_declaration_record_id" column="id" length="64">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="version" type="integer" version="true"/>
+        <field name="tenantId" type="urssaf_paje_tenant_id" column="tenant_id" length="64"/>
+        <field name="externalReference" type="urssaf_paje_external_reference" column="external_reference" length="191"/>
+        <field name="employerAccountId" type="urssaf_paje_employer_account_id" column="employer_account_id" length="64" nullable="true"/>
+        <field name="createdAt" type="urssaf_paje_instant" column="created_at"/>
+        <embedded name="snapshot" class="TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Declaration\DeclarationSnapshot" use-column-prefix="false"/>
+        <embedded name="status" class="TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Declaration\DeclarationStatus" use-column-prefix="false"/>
+    </entity>
+</doctrine-mapping>

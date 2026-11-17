@@ -43,3 +43,67 @@ mandate per employer" rule, a record claimed by an atomic `UPDATE`, and minimise
   repository itself; the bridge test returns a repository over a second EntityManager), and the competing copies are read
   and saved through it. The save of an instance that was never read for an identifier that is already stored is not part
   of the contract: each adapter reports it in its own way, and the bridge decides its behaviour when it is built.
+
+## Amendment (2026-11-17, lead-accepted, lot 6)
+
+- **Types.** Fourteen DBAL types, all named `urssaf_paje_*` (`DoctrineIntegration::types()`): `tenant_id`, `external_reference`,
+  `employer_account_id`, `mandate_id`, `declaration_record_id`, `employer_number`, `employee_number`, `declaration_fingerprint`,
+  `calendar_date`, `birth_date`, `instant` (UTC, second precision), `employer_verification`, `submission_errors` and
+  `declaration_result` (the last three are JSON). There is no declaration id type: PAJE has no declaration identifier, the
+  reference of an accepted declaration lives in the result document.
+- **Masked conversion errors (decision 7).** The employer number, the employee number and the birth date are masked in every
+  conversion error, in both directions (a stored value the domain refuses, a stored value of the wrong type, a foreign PHP
+  value); so are the three JSON types (a stored document, a foreign PHP value). The other types quote their value.
+- **Schema.** `urssaf_paje_employer_accounts` (unique `(tenant_id, employer_number)` and `(tenant_id, external_reference)`),
+  `urssaf_paje_mandates` (`employer_account_id`, `origin`, `state`, timeline, `birth_date`; the external reference is not unique),
+  `urssaf_paje_declaration_records` (unique `(tenant_id, external_reference)` only, no `declaration_id`),
+  `urssaf_paje_active_mandates` (primary key `(tenant_id, employer_number)`, unique `mandate_id`) and `urssaf_paje_outbox`. The
+  employer identification (`employer_number`, `birth_date`) is one embeddable shared by the account and the mandate, and the
+  declaration period one embeddable of the snapshot (`period_start`, `period_end`, `payment_date`), so the columns are the same
+  everywhere. Indexes serve the port queries (last checked, stage and state counts, mandates of an employer by registration,
+  records by state and update, stale submissions) and the erasure of ADR 0015: `(tenant_id, employer_number, state)` on the
+  records for `countByEmployer` and `deleteByEmployer`.
+- **Documents.** The result document holds the document reference, the amounts (cents, rate as its decimal string, dates as
+  `Y-m-d`), the Pajemploi+ flag, the transfer date and the non-blocking messages. The **child checks are never written** (ADR 0007:
+  they hold child names and birth dates): a result is read back with none, as the aggregate keeps it. The last employer verification
+  keeps the raw online account state URSSAF sent.
+- **Tests.** `tests/Functional/Doctrine/Mapping` holds the schema test (exact columns, nullability, indexes and unique constraints
+  per table on SQLite), the ADR 0007 test (no column named after personal data, `birth_date` only in accounts and mandates, no
+  personal value in any row) and the mapping round trips; the shared support is `tests/Functional/Doctrine/Support/TestDatabase`.
+
+## Amendment (2026-11-17, lead-accepted, lot 6, Symfony and Standalone wiring)
+
+- **Symfony.** The `doctrine` driver, the `persistence.entity_manager` option, the prepended mapping, the build failure without
+  DoctrineBundle and `DatabaseSchemaCheck` are recorded in ADR 0013 (amendment lot 6). The test application of the functional suite can
+  boot DoctrineBundle on an in-memory SQLite.
+- **Standalone.** `UrssafTierceDeclarationPajeBuilder::withDoctrine(EntityManagerInterface)` sets the three repositories, the
+  `DoctrineTransactionManager` and the `DoctrineWorkflowStatistics`; the outbox stays separate
+  (`withOutbox(new DoctrineOutbox($entityManager), $sink)`) so that a host can choose another outbox. The builder does not register the types
+  nor the mapping: `DoctrineIntegration::registerTypes()` and `mappingDriver()` are the host's to call (`docs/doctrine.md`).
+- **Documentation.** `docs/doctrine.md` covers the setup, the dedicated entity manager, the schema and migrations left to the host, the
+  encryption recipe of the birth-date type and the JSON columns, concurrency, erasure and backups.
+
+## Amendment (2026-11-17, lead-accepted, lot 6, repositories)
+
+- **Save protocol (decision 4, amendment of lot 4b).** The three repositories share `AggregateStore`. A save is refused with
+  `<aggregate>.concurrent_modification` (no parameters, like the in-memory repositories) **before anything is flushed** when the
+  stored version is not the instance's (another writer saved, claimed or erased it), and the refused instance is detached, so the
+  next read returns what is stored and the entity manager stays open. The save of an instance that is not managed (never read,
+  or detached by `clear()`) while its identifier is stored is refused the same way, never an overwrite: this is the behaviour the
+  lot 4b amendment left to the bridge. The native `version` column stays the backstop for a writer that wins the race between
+  the check and the flush (the ORM then closes the entity manager, as after any failed flush, and the save is refused with the
+  same code); the identifier of an instance created concurrently, and a unique constraint broken by a concurrent writer, are
+  reported the same way or as the domain duplicate violation. Concurrency is checked first, then uniqueness, as in memory.
+- **Reads.** `get()` replaces a managed copy that another writer changed or erased by what is stored; the queries return the
+  instance the entity manager already manages for a row, like every Doctrine query.
+- **Active mandate.** The key row is rewritten in the transaction of the save (delete, then insert if the mandate is not
+  cancelled); the primary key violation is reported as `mandate.duplicate_active`; the employer number is never in a violation
+  parameter (ADR 0007). `delete()` removes the mandate and its key row in one transaction.
+- **Claim and erasure.** `claimForSubmission()` is one conditional `UPDATE ... WHERE state = pending` that bumps the version and
+  detaches the managed copy. `deleteByEmployer()` selects the ids (creation, then id), deletes under the same condition (tenant, employer, states: a record claimed in between survives, so the
+  re-count of ADR 0015 catches it) and detaches the managed copies; `countByEmployer()` and `deleteByEmployer()` use the index `(tenant_id, employer_number, state)`.
+- **Order.** Every list ends with the identifier (accounts: never checked first, then last check, creation, id; mandates:
+  registration, id; records: update, creation, id; stale submissions: last attempt, creation, id); the statistics are ordered
+  by tenant, then state.
+- **Transactions.** `DoctrineTransactionManager` rolls back and detaches the entities of this package (never the host's) when
+  the operation throws, and does not close the entity manager.

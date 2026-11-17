@@ -81,10 +81,11 @@ final class ConfigurationRulesEnvironmentTest extends TestCase
         static::assertTrue(ConfigurationRules::rateLimiterWithoutLimits(['enabled' => true, 'limit' => 10, 'window' => null]));
     }
 
-    public function testTheDoctrineDriverIsRefused(): void
+    public function testTheDoctrineDriverNeedsDoctrineBundle(): void
     {
-        static::assertTrue(ConfigurationRules::doctrineDriverSelected(['persistence' => ['driver' => 'doctrine']]));
-        static::assertFalse(ConfigurationRules::doctrineDriverSelected(['persistence' => ['driver' => 'in_memory']]));
-        static::assertFalse(ConfigurationRules::doctrineDriverSelected(['persistence' => ['driver' => 'custom']]));
+        static::assertTrue(ConfigurationRules::doctrineDriverWithoutBundle('doctrine', false));
+        static::assertFalse(ConfigurationRules::doctrineDriverWithoutBundle('doctrine', true));
+        static::assertFalse(ConfigurationRules::doctrineDriverWithoutBundle('in_memory', false));
+        static::assertFalse(ConfigurationRules::doctrineDriverWithoutBundle('custom', false));
     }
 }

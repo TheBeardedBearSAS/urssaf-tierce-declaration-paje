@@ -66,6 +66,15 @@ parameters:
                 - src/Domain/Employee/EmployeeByNumber.php
                 - src/Domain/Employee/EmployeeByNir.php
                 - src/Domain/Employee/EmployeeByAdministrativeData.php
+        # The optional connection settings of ApiConfiguration (public constructor with defaults, like the reference) and
+        # the optional body of ApiRequest::post() (query-only POST: 030) and the optional options of the gateway factory
+        # default to null (lot 4 contract).
+        -
+            identifier: ergebnis.noParameterWithNullDefaultValue
+            paths:
+                - src/Infrastructure/Urssaf/ApiConfiguration.php
+                - src/Infrastructure/Urssaf/Http/ApiRequest.php
+                - src/Infrastructure/Urssaf/UrssafGatewayFactory.php
         # Deviation from the reference configuration (ADR 0000, smaller adaptations, lead decision): test builders default
         # their optional arguments to null so that each test names only what it varies; production code is not concerned.
         -

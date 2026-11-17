@@ -9,6 +9,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- HTTP gateway: `UrssafHttpGateway` (the 12 operations behind the `PajeGateway` port and its sub-ports),
+  `UrssafGatewayFactory`, `JsonApiClient` (bearer token, one replay after a 401, status mapping per operation class:
+  050 / 051 are never resent and an uncertain outcome raises `OutcomeUnknown`, 429 is retryable with `Retry-After`),
+  `OAuth2TokenProvider` (client credentials, scope `tiersdecl.paje`, cached in a PSR-6 / PSR-16 / in-memory token
+  store), `ApiConfiguration` (environment, base URI override, optional correlation headers, retry-safe writes),
+  optional sliding-window rate limiter (off by default: quotas are not published). Transport errors are sanitised and
+  nothing personal is logged.
+- Runtime dependencies: `ext-json`, `ext-mbstring` and the PSR interfaces (`psr/cache`, `psr/clock`,
+  `psr/http-client`, `psr/http-factory`, `psr/http-message`, `psr/log`, `psr/simple-cache`).
 - Wire layer (`src/Infrastructure/Urssaf/Wire`): request and response mappers of the 12 operations (query, path and
   body parameters, `{}` bodies, amounts as 2-decimal JSON literals, strict dates), error payload parsing (array or
   single object, trimmed codes), `ApiErrorCode` catalogue and classification into `RejectionKind`, non-blocking

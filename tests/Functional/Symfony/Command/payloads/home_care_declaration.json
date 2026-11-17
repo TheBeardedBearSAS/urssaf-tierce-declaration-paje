@@ -1,0 +1,12 @@
+{
+    "calculation_mode": "R",
+    "common": {
+        "period_start": "2026-10-01",
+        "period_end": "2026-10-31",
+        "payment_date": "2026-11-05",
+        "hours": 100,
+        "net_monthly_salary": "500.00"
+    },
+    "employee": {"employee_number": "Z1234567890123"},
+    "children": [{"birth_date": "2015-01-12", "last_name": "DUPONT", "first_name": "CAMILLE"}]
+}

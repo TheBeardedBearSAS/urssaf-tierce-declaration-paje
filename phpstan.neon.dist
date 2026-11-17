@@ -6,6 +6,9 @@ includes:
 
 parameters:
     level: max
+    # Analyse against the lowest supported PHP version (composer "php": ">=8.2"), whatever the runtime: on PHP 8.3+
+    # PHPStan would otherwise demand typed class constants, a PHP 8.3 feature the package cannot use.
+    phpVersion: 80200
     paths:
         - src
         - tests
@@ -23,7 +26,10 @@ parameters:
         return: 100
         param: 100
         property: 100
-        constant: 100
+        # Typed class constants are a PHP 8.3 feature and the package supports PHP 8.2 (composer "php": ">=8.2"): the
+        # plugin skips this check on PHP 8.2 and would demand them on PHP 8.3+, which breaks `make ci PHP_VERSION=8.4`.
+        # Disabled so that the gate is identical on every supported version (ADR 0000).
+        constant: 0
 
     ergebnis:
         # AbstractBundle::loadExtension/prependExtension and CompilerPassInterface::process impose ContainerBuilder parameters.
@@ -34,11 +40,28 @@ parameters:
                 - DomainException
                 - LogicException
                 - RuntimeException
+                # Base class of every domain exception (violation code + params), ADR 0000.
+                - TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Exception\DomainException
+                # Common properties of the public integration events (scalar, readonly, rebuilt by named arguments).
+                - TheBeardedBear\UrssafTierceDeclarationPaje\Contract\Event\IntegrationEvent
+                # DBAL decorator bases (documented extension points), used by the test middleware that observes statements.
+                - Doctrine\DBAL\Driver\Middleware\AbstractDriverMiddleware
+                - Doctrine\DBAL\Driver\Middleware\AbstractConnectionMiddleware
                 # Framework extension points without an interface alternative (bridges only).
                 - Doctrine\DBAL\Types\Type
                 - Symfony\Component\HttpKernel\Bundle\AbstractBundle
                 - Symfony\Component\Console\Command\Command
                 - Symfony\Component\HttpKernel\Kernel
+        # Doctrine generates lazy-loading proxies by extending the mapped entities, so the entities cannot be final;
+        # they are final by convention (@final phpdoc). Embeddables are never proxied and stay final.
+        final:
+            classesNotRequiredToBeAbstractOrFinal:
+                - TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Employer\EmployerAccount
+                - TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Mandate\Mandate
+                - TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Declaration\DeclarationRecord
+                # Doctrine bridge entities (ADR 0014): read-only, written with DBAL, proxied like the aggregates.
+                - TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Doctrine\Entity\OutboxMessage
+                - TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Doctrine\Entity\ActiveMandate
         # Disabled rules (DDD value objects / domain model), each one justified:
         # Optional value-object arguments and "withX" factories legitimately default (e.g. currency, locale).
         noConstructorParameterWithDefaultValue:
@@ -50,6 +73,55 @@ parameters:
         noNullableReturnTypeDeclaration:
             enabled: false
 
+    ignoreErrors:
+        # The optional query birth date (`dtNaissanceSalarie`) of the three employee identifications defaults to null.
+        -
+            identifier: ergebnis.noParameterWithNullDefaultValue
+            paths:
+                - src/Domain/Employee/EmployeeByNumber.php
+                - src/Domain/Employee/EmployeeByNir.php
+                - src/Domain/Employee/EmployeeByAdministrativeData.php
+        # The optional connection settings of ApiConfiguration (public constructor with defaults, like the reference) and
+        # the optional body of ApiRequest::post() (query-only POST: 030) and the optional options of the gateway factory
+        # default to null (lot 4 contract).
+        -
+            identifier: ergebnis.noParameterWithNullDefaultValue
+            paths:
+                - src/Infrastructure/Urssaf/ApiConfiguration.php
+                - src/Infrastructure/Urssaf/Http/ApiRequest.php
+                - src/Infrastructure/Urssaf/UrssafGatewayFactory.php
+        # Deviation from the reference configuration (ADR 0000, smaller adaptations, lead decision): test builders default
+        # their optional arguments to null so that each test names only what it varies; production code is not concerned.
+        -
+            identifier: ergebnis.noParameterWithNullDefaultValue
+            paths:
+                - tests/Unit/Domain/*Test.php
+                - tests/Unit/Domain/*/*Samples.php
+        # The optional cause of a domain exception defaults to null, like the previous exception of \Exception::__construct
+        # (it is only given by the few exceptions that wrap another failure, MandateRecordingFailed).
+        -
+            identifier: ergebnis.noParameterWithNullDefaultValue
+            paths:
+                - src/Domain/Exception/DomainException.php
+        # Doctrine optimistic-lock token, read and written by the ORM through reflection: not a domain concept, so the
+        # aggregates expose no accessor.
+        -
+            identifier: property.onlyWritten
+            paths:
+                - src/Domain/Employer/EmployerAccount.php
+                - src/Domain/Mandate/Mandate.php
+                - src/Domain/Declaration/DeclarationRecord.php
+
     shipmonkRules:
         enableAllRules: true
+        forbidCheckedExceptionInCallable:
+            allowedCheckedExceptionCallables:
+                # Test fakes that run the closure of a race scenario (another writer saving, or a violation the store
+                # raises) from inside the faked port; the closure is stored and called later, never by the declaring code,
+                # so any exception it throws is the scenario itself.
+                'TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Unit\Application\Fake\JournalingDeclarationRecords::beforeNextSave': 0
+                'TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Unit\Application\Fake\FakeSalaryGateway::duringNextCall': 0
+                'TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Unit\Application\Fake\FakeEmployerGateway::duringNextCall': 0
+                'TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Unit\Application\Fake\ConcurrentAccounts::beforeSave': 0
+                'TheBeardedBear\UrssafTierceDeclarationPaje\Tests\Unit\Application\Fake\ConcurrentMandates::beforeSave': 0
 

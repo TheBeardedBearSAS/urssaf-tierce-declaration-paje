@@ -1,0 +1,27 @@
+{
+    "dtDebutAgrement": "1980-01-30",
+    "dtNaissanceSalarie": "1980-01-30",
+    "inputAdresseSalarie": {
+        "codeCommune": "94022",
+        "codePostal": "94600",
+        "complementLocalisation": "RESIDENCE LES LILAS",
+        "lettreVoie": "B",
+        "libelleVoie": "DE LA PAIX",
+        "lieuDit": "LE BOURG",
+        "numVoie": 12,
+        "typeVoie": "R"
+    },
+    "inputIdentificationSalarie": {
+        "cdCivilite": "1",
+        "codePaysNaissance": "100",
+        "departementNaissance": "972",
+        "dtNaissanceSalarie": "1980-01-30",
+        "nomNaissance": "L'HOMME",
+        "nomUsage": "DURAND",
+        "prenom": "JEAN-MICHEL",
+        "villeNaissance": "CHOISY LE ROI"
+    },
+    "nirSalarie": "178010701005265",
+    "numeroPajeSalarie": "Y2926822480004",
+    "typeActiviteSalarie": "A"
+}

@@ -1,0 +1,68 @@
+<?php
+
+declare(strict_types=1);
+
+namespace TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Doctrine;
+
+use Doctrine\ORM\EntityManagerInterface;
+use Override;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Application\Port\TransactionManager;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Declaration\DeclarationRecord;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Employer\EmployerAccount;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Mandate\Mandate;
+use Throwable;
+
+/**
+ * {@see TransactionManager} on the DBAL connection of an entity manager.
+ *
+ * The repositories of this bridge persist and flush on every save: inside {@see self::transactional()} those flushes
+ * join the surrounding transaction (nested calls just join the outermost one) and become durable together when the
+ * operation returns. When it throws, the transaction is rolled back, the entities of this package that the entity
+ * manager still manages ({@see EmployerAccount}, {@see Mandate}, {@see DeclarationRecord}) are detached (so none that was
+ * flushed inside the rolled-back transaction stays managed, with a version the database never stored) and the throwable
+ * is rethrown unchanged. The entities of the host application are left untouched: the entity manager is never cleared
+ * as a whole.
+ *
+ * Unlike EntityManager::wrapInTransaction(), a failing operation does not close the entity manager: domain exceptions
+ * (invalid state transition, duplicate...) are ordinary control flow for the application layer.
+ */
+final readonly class DoctrineTransactionManager implements TransactionManager
+{
+    /** Root classes of the identity map entries that belong to this package. */
+    private const PACKAGE_ENTITIES = [EmployerAccount::class, Mandate::class, DeclarationRecord::class];
+
+    public function __construct(private EntityManagerInterface $entityManager) {}
+
+    /**
+     * @template T
+     *
+     * @param callable(): T $operation
+     * @param-immediately-invoked-callable $operation
+     *
+     * @return T
+     */
+    #[Override]
+    public function transactional(callable $operation): mixed
+    {
+        try {
+            return $this->entityManager->getConnection()->transactional(static fn(): mixed => $operation());
+        } catch (Throwable $throwable) {
+            $this->detachPackageEntities();
+
+            throw $throwable;
+        }
+    }
+
+    private function detachPackageEntities(): void
+    {
+        $unitOfWork = $this->entityManager->getUnitOfWork();
+        foreach ($unitOfWork->getIdentityMap() as $class => $entities) {
+            if (!\in_array($class, self::PACKAGE_ENTITIES, true)) {
+                continue;
+            }
+            foreach ($entities as $entity) {
+                $unitOfWork->detach($entity);
+            }
+        }
+    }
+}

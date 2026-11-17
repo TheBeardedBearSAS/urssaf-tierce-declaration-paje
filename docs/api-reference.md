@@ -15,7 +15,8 @@ when the PDF is not versioned. Here the PDF (1.5.2) is newer than the Swagger (1
 adds blocking / non-blocking messages to PDF §4.4 and has no wire impact. Field names, codes and wire values below are
 reproduced verbatim from the specification (they are French by design); everything else in the package is English.
 
-> Status: specification only. Nothing below is implemented yet; see [roadmap.md](roadmap.md).
+> Status: implemented (domain, wire, HTTP gateway, use cases, Symfony and Doctrine bridges), not released yet. The
+> open points of §5 are still to be settled on the sandbox (`make test-contract`, [testing.md](testing.md)).
 
 Vocabulary: *PE* = *particulier employeur* (private employer); *SP* = *salarié particulier* (private-employed worker);
 *AMA* = *assistante maternelle agréée* (licensed childminder); *GED* = *garde d'enfants à domicile* (home childcare);
@@ -113,7 +114,7 @@ Security errors (401 token missing/invalid, 403 refused, 512): body not document
 Recommended flow (PDF, order inferred from the operation numbering and the error codes):
 
 1. **Mandate** (§2.11): the platform notifies Pajemploi that it holds a mandate from the employer. Without a mandate,
-   employer-scoped operations fail (`MANDAT_INEXISTANT` appears in the PDF example of §2.4; the PDF does not state
+   employer-scoped operations fail (`MANDAT_INEXISTANT` appears in the PDF example of 040, §2.5; the PDF does not state
    which operations require it, see §5).
 2. **Check the employer** (§2.1) and the **employee** (§2.2), **associate** the employee to the employer (§2.4),
    **check the children** (§2.3).
@@ -717,45 +718,56 @@ Non-blocking messages (PDF §4.4.2, returned in `erreursNonBloquantes`, HTTP 200
 
 ## 4. Package decisions derived from the specification
 
+Architecture decisions (inherited from `urssaf-tiers-prestations` or specific to this package) are recorded in
+[docs/adr/](adr/README.md).
+
 1. **One operation, one method.** The 12 operations map to 12 gateway methods; AMA and GED are separate methods and
    separate request types (different required fields, different `finDeContrat`), sharing value objects
-   (`DeclarationPeriod`, `Child`, `EmployeeIdentification`, `Money`).
-2. **Employer context.** `EmployerReference` = (`PajeEmployerNumber` 14 alphanumeric chars, `BirthDate`). It is a
+   (`DeclarationPeriod`, `Child`, `EmployeeIdentification`, `Amount`).
+2. **Employer context.** `EmployerReference` = (`PajeEmployerNumber` 14 characters, `CalendarDate` birth date). It is a
    *credential-like* pair: never logged in clear. Employer-scoped operations take it as one parameter.
-3. **Amounts.** Wire amounts are JSON numbers; the domain uses a decimal-safe `Money` value object (integer cents),
-   never `float`. Parsing from the wire goes through the exact decimal text. Serialisation emits at most 2 decimals.
-4. **Dates.** `yyyy-MM-dd` ↔ `DateTimeImmutable` at midnight, `Europe/Paris`; no time zone on the wire. The placeholder
+3. **Amounts.** Wire amounts are JSON numbers; the domain uses a decimal-safe `Amount` value object (signed integer
+   cents, bounds applied per field), never `float`. Parsing from the wire goes through the shortest round-trip
+   representation rounded to the cent; `txPas` is kept as an exact decimal (`Rate`). Serialisation emits 2 decimals
+   (ADR 0008).
+4. **Dates.** `yyyy-MM-dd` ↔ `CalendarDate` (strict, no time part, no time zone on the wire; ADR 0001). The placeholder
    `"string"` of the official sample responses must not be treated as a valid date by the mapper (rejects with a typed
    error), only the fixtures are loose.
-5. **Result with non-blocking errors.** Every result carries `list<NonBlockingError>`; the code is preserved raw and
+5. **Result with non-blocking errors.** Every result carries `list<NonBlockingMessage>`; the code is preserved raw and
    typed when known (§3.6). HTTP 200 never means "no warning".
 6. **Errors.** Parse both an `Erreur` array and a single `Erreur` object. Known codes become an `ApiErrorCode` enum
    with a raw fallback. Trim codes (the PDF shows trailing spaces).
 7. **Declaration safety.** `declare*` must never be retried automatically on a timeout or 5xx: the retry could produce
-   `ER_API_050_0070` / `ER_API_DECLA_00020` or, worse, a duplicate. TBD: expose a "pre-declare then declare" helper that
-   refuses to declare when the pre-declaration contains a blocking error.
+   `ER_API_050_0070` / `ER_API_DECLA_00020` or, worse, a duplicate (ADR 0003: unknown outcome, manual resolution).
+   An opt-in policy pre-declares (045 / 046) before declaring and refuses to declare when the pre-declaration is
+   rejected (ADR 0008, default off).
 8. **Mandate prerequisite.** The package does not manage the legal mandate; it exposes `registerMandate()` /
-   `cancelMandate()` only. TBD: which operations strictly require a registered mandate (see §5).
+   `cancelMandate()` only. Which operations strictly require a registered mandate is unknown (§5): an optional local
+   guard (off by default) can refuse 045, 046, 050 and 051 without a local mandate (ADR 0009).
 9. **Empty body.** The package always sends `{}` for 021 and for 023 when the employee is identified by query
    parameters (PDF technical note), never an empty body.
 10. **Typed identification.** `EmployeeIdentification` is a sum type: by Pajemploi number, by NIR, or by administrative
     data (§2.2 priority 1/2/3); the "at least one" rule is enforced locally. The declarations mirror it with `InputSp`.
-11. **Local validation.** Only rules stated in the contract are enforced locally: lengths (14 / 15 / 5), patterns of
-    names, numeric ranges, `yyyy-MM-dd`. Contradictions (PDF vs Swagger) are validated with the **laxer** bound and the
+11. **Local validation.** Only rules stated in the contract are enforced locally (the Swagger schema plus the
+    decisions of this section, ADR 0009): lengths (14 / 15 / 5), patterns of names, numeric ranges, `yyyy-MM-dd`;
+    PDF-only rules are left to the server. Contradictions (PDF vs Swagger) are validated with the **laxer** bound and the
     server decides (`nbJoursActivite` 1–99 vs ≤ 31, `nbHeures` unbounded vs ≤ 1000).
 12. **Personal data.** NIR, birth dates, employer numbers, child names, employee identities are personal data: never
     logged, never put in exception messages.
-13. **Sandbox.** TBD: a contract test suite on `https://api-edi.urssaf.fr/tiersdecl/v1/paje`, once credentials and a test
+13. **Sandbox.** A contract test suite (skipped without credentials) on `https://api-edi.urssaf.fr/tiersdecl/v1/paje`, once credentials and a test
     employer / mandate are available.
 
 ---
 
 ## 5. Open points
 
+- **Echoed child** (`inputEnfantPe` of 022, 045, 046, 050, 051): decoded leniently; an unreadable fragment is a check without
+  child (ADR 0008 amendment).
 - **Swagger 1.5.1 vs PDF 1.5.2**: the PDF is newer; the only PDF 1.5.2 change is new §4.4 messages (changelog). The
   Swagger has no per-code error documentation.
 - **Production vs sandbox Swagger**: identical except `host` (`api.urssaf.fr` / `api-edi.urssaf.fr`).
-- **Mandate prerequisite**: not stated which operations need a mandate. `MANDAT_INEXISTANT` appears only as an
+- **Mandate prerequisite** (interim: optional local guard, off by default, ADR 0009): not stated which operations
+  need a mandate. `MANDAT_INEXISTANT` appears only as an
   example of 040 (AMA estimate, documented as context-free); no mandate error is documented for 020 to 023 or 045 to 051.
   `COMPTE_DEJA_MANDATE` is also listed for the cancellation (031).
 - **Quota values**: not published.
@@ -800,5 +812,28 @@ Non-blocking messages (PDF §4.4.2, returned in `erreursNonBloquantes`, HTTP 200
 - **Formats not published**: `numeroPajeEmployeur` regex (only the 14-length), NIR checksum, `etatCompteEnLigne` enum,
   the maximum size of `inputEnfantPe` / `inputDeclEnfant` for GED, the exact value of `NMX`, `RCHM_MT_AMA`,
   `RCHM_MT_GED`, `PERIODE1_MONO`.
+- **Retry safety of 023, 030 and 031**: not specified. 023 may create an employee; a replay of 030 / 031 is not
+  documented. Treated as never resent by default, configurable per operation (ADR 0003).
+- **Response amounts**: no minimum / maximum published for `DeclarationCommun` and `OutputEstimation`; decoded as
+  signed amounts with at most 2 decimals (ADR 0008).
+- **`txPas` precision**: not published; decoded as an exact decimal text with no precision cap (ADR 0008, `Rate`).
+- **Optional response fields**: every field of `OutputVerificationPe`, `OutputVerificationSp`, `VerificationEnfantPe` and
+  `Erreur` is optional in the Swagger. Decoding rule (a recorded declaration must never become `outcome_unknown`
+  because a fragment is incomplete): an absent boolean is `false`; an absent string (including `Erreur.code`) is `''`, except the four that stay `null` because absence is meaningful
+  (`numeroPajeSalarie`, `Erreur.message`, `Erreur.description`, `referenceDocumentaire`);
+  an absent `etatCompteEnLigne` is `OnlineAccountState::of('')`; a `verificationEnfantPe` item without
+  `reponseStatutEnfant` is skipped; an absent `inputEnfantPe` gives a `ChildCheck` without child.
+- **`InputFinDeContratAma.enfants`**: the Swagger (prd and sb) types it `InputEnfant`, the PDF (§3.9 / §3.11) and §2.7
+  `InputEnfantAma`. The code takes the PDF superset (`ChildminderChild`, both extra fields optional) as the laxer bound
+  (§4 decision 11); `joursAccueilHandicap` / `joursAccueil24Consecutive` are emitted under `finDeContrat.enfants` only
+  when set.
+- **`mntSalaireNetMensuel` > 0**: stated only in the Swagger description ("Ce champ doit etre superieur a 0"), no
+  `minimum` keyword; enforced as an explicit contract rule (ADR 0009).
+- **`format: int32`**: a bound when the schema gives no explicit one (`nbHeures`, `joursAccueilHandicap`,
+  `joursAccueil24Consecutive`); ignored when `minimum` / `maximum` exist (ADR 0009). `uint8` is never a bound.
+- **Operation 023 identity**: `inputCreationSalarie.inputIdentificationSalarie` is read from `EmployeeCreation` only;
+  the identity of `EmployeeByAdministrativeData` is the 021 query criterion and is never copied into the 023 body.
+  Consequence for the wire / application lot: a 023 request identified by administrative data must have a non-empty
+  `EmployeeCreation::identity()`, enforced with a stable violation code (ADR 0009 amendment).
 - **CESU / PAJE / AE**: the three "Tierce déclaration" APIs share `/tiersdecl/v1` and the mandate model; a shared
   library is a later question, out of scope here.

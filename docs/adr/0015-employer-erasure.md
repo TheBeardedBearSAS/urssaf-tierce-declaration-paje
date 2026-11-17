@@ -28,3 +28,10 @@ host (ADR 0007). Hosts need a supported way to erase an employer from the packag
 
 - Idempotency of `DeclareSalary` is lost for the erased external references.
 - URSSAF keeps its data and the mandate.
+
+## Amendment (2026-11-17, lead-accepted, lot 4a)
+
+- `EmployerAccount::forget(Instant, list<MandateId>, list<DeclarationRecordId>)` records `EmployerForgotten` (account id,
+  tenant, external reference, erased ids, instant: no employer number, no birth date) and changes no state; the caller
+  deletes the account, its mandates and its records in the same transaction, then releases the event.
+- `MandateRepository::delete(MandateId)` is a no-op for an unknown id and records no event.

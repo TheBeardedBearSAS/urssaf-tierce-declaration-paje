@@ -49,3 +49,57 @@ employers, mandates and declarations "to track what was sent and protect against
   non-cancelled per `(tenant, employer)`, declarations `(tenant, external reference)`.
 - Two declarations differing only by personal data (child names, employee identity) share a fingerprint; the external
   reference is the host's idempotency key.
+
+## Amendment (2026-11-17, lead-accepted, lot 4a)
+
+- **Names:** the employer origin is `EmployerOrigin` (`tracked` | `imported`) and the mandate origin `MandateOrigin`
+  (`registered` | `imported`); factories `EmployerAccount::track()` / `::import()` and `Mandate::register()` /
+  `::import()`. `EmployerStage` is `tracked` | `mandate_registered` | `mandate_cancelled`; `MandateState` is
+  `registered` | `cancelled`.
+- **Stage:** method 020 never changes the stage (it says nothing about the mandate): `EmployerAccount::applyVerification()`
+  only stores the last `EmployerVerification` snapshot and the instant it was read. Registering a mandate (030 or import)
+  moves any stage to `mandate_registered`, cancelling (031) to `mandate_cancelled`.
+- **Keys:** repositories look employers and mandates up by `(TenantId, PajeEmployerNumber)`; the birth date is stored in
+  the `EmployerReference` (ADR 0007) but is not part of any key.
+- **Events:** domain events carry identifiers only (ids, tenant, external reference, origin, stages, the 020 snapshot): never
+  the employer number or birth date (ADR 0012). Importing an employer or a mandate records the same event as creating it
+  (`EmployerRegistered` / `MandateRegistered`, with the origin).
+
+## Amendment (2026-11-17, lead-accepted, lot 4a, declarations)
+
+- **Fingerprint:** `DeclarationFingerprint::of(Declaration)` hashes (SHA-256) a canonical text of the declaration: activity
+  type, period and payment dates, hours, paid-leave half-days, rates, amounts and indemnities, the childminder or home
+  care fields (calculation mode included), the contract end, the number of children and, for a childminder, the per-child
+  care day counts (`joursAccueilHandicap`, `nbJoursAccueil24h`) without the child identity. The employee identification
+  (kind, number, NIR, names, birth dates), the employer and the child names are not part of it.
+- **Record:** `DeclarationSnapshot` keeps the employer number, activity type, period, employee identification kind and
+  optional `PajeEmployeeNumber`, and the fingerprint. The result kept once `declared` is a `DeclarationResult` **without
+  child checks** (child names, ADR 0007); it keeps the amounts, rate, `referenceDocumentaire`, transfer date and
+  non-blocking messages. A declared record always has a result. `SubmissionError` keeps the error code, its kind (the value
+  of `RejectionKind`, ADR 0005), message and description.
+- **Resolution:** `outcome_unknown → declared` stores a result holding only the `referenceDocumentaire` read on
+  pajemploi (`DeclarationRecord::resolveAsDeclared(string, Instant)`, a blank reference is refused).
+- **Events:** the domain events translated into integration events (declared, rejected, already declared, outcome
+  unknown) carry the record id, tenant, external reference, activity type and period; the others (recorded, requeued,
+  submission failed, credentials rejected) carry the record id and tenant only (never the
+  employer number, ADR 0012); `DeclarationDeclared` also carries the `referenceDocumentaire` and the codes of the
+  non-blocking messages, never an amount.
+- **Port:** `DeclarationRecordRepository` has no `findByDeclarationId` (PAJE has no declaration id); `countByEmployer()` and
+  `deleteByEmployer()` take the `PajeEmployerNumber` (ADR 0015).
+
+## Amendment (2026-11-17, lead-accepted, lot 4a, review)
+
+- **Events are self-sufficient:** translating a domain event into an integration event is a pure function of the event,
+  with no repository lookup, so it cannot fail inside the transaction (a rollback after a successful 030 / 031 would lose
+  a write that is never resent, ADR 0003). `Mandate` keeps the `EmployerAccountId` of its employer (set by `register()` /
+  `import()`: the use case tracks the employer first); `MandateRegistered` and `MandateCancelled` carry it.
+  `EmployerStatusRefreshed` carries the stage of the account. `DeclarationRecord` keeps the optional
+  `EmployerAccountId` given to `record()` (null when the employer is not tracked then); the declared, rejected,
+  outcome-unknown and already-declared events carry it.
+- **Codes only:** `DeclarationRejected`, `DeclarationAlreadyDeclared` and `DeclarationSubmissionFailed` carry the error
+  codes (`list<string>`), never `SubmissionError` (its message and description may echo host data, ADR 0007). The codes
+  are those of the errors at the time of the transition.
+- **Resolved result:** the result stored by `resolveAsDeclared()` has `pajemploiPlus = false` by convention (only the
+  `referenceDocumentaire` was read by the operator, the flag is unknown); do not read it as a fact.
+- **No employer number in exceptions:** the employer number is credential-like (ADR 0007): the `InvariantViolation` of a
+  duplicate employer account or active mandate carries no parameter (the Doctrine repositories follow the same rule).

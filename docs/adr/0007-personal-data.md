@@ -38,3 +38,10 @@ exception messages"). The reference documents encryption at rest as a recipe (DB
 - Every `CalendarDate` parameter that holds a birth date (employer, employee, child) or a licence date is
   `#[SensitiveParameter]`, in the factories and the private constructors (a `CalendarDate` is not masked on its own);
   tests assert it by reflection.
+
+## Amendment (2026-11-17, lead-accepted, lot 4a)
+
+- `Mandate` keeps the full `EmployerReference` (031 needs the birth date even after the account was edited): the mandate
+  birth date column uses the same encryptable DBAL type as the employer one (ADR 0014).
+- URSSAF error **messages** are masked like descriptions (templates such as `[PERIODE1_MONO]` are filled with host
+  values). Outbox failures store the exception class and code only, never the raw message of a host sink exception.

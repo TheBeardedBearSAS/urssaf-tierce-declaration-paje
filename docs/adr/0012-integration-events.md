@@ -27,3 +27,20 @@ With full parity, the package exposes versioned integration events through an ou
 ## Consequences
 
 - Documented in `docs/integration-events.md`; any payload change bumps `VERSION`.
+
+## Amendment (2026-11-17, lead-accepted, lot 4a)
+
+- Classes: `EmployerStatusChanged`, `EmployerForgotten`, `MandateRegistered`, `MandateCancelled`, `DeclarationDeclared`,
+  `DeclarationRejected`, `DeclarationAlreadyDeclared`, `DeclarationOutcomeUnknown` (eight types, all `VERSION = 1`).
+  `MandateRegistered` carries the `origin` (`registered` after 030, `imported`).
+- `EmployerStatusChanged` carries `previousStage`, `stage` (`tracked`, `mandate_registered`, `mandate_cancelled`) and the
+  raw 020 answer (`authorised`, `onlineAccountState`), both null for a change coming from a local mandate change.
+- Declaration events carry `employerAccountId` (null when the employer is not tracked), `activityType`
+  (`childminder`, `home_care`), `periodStart` and `periodEnd` (`yyyy-MM-dd`). `DeclarationDeclared` adds
+  `referenceDocumentaire` and `nonBlockingCodes`; `DeclarationRejected` and `DeclarationAlreadyDeclared` add
+  `errorCodes`; `DeclarationOutcomeUnknown` adds `reason`. Mandate events carry `employerAccountId`.
+- `EmployerForgotten` carries `mandateIds` and `declarationRecordIds` only (no employer number).
+- `Application\Dto\TenantOverview::needingAttention()` counts `outcome_unknown`, `error`, `invalid_credentials` and
+  `already_declared` declarations (ADR 0003).
+- `DeclarationDeclared::$referenceDocumentaire` is nullable: it is `null` when URSSAF answered without one (never an empty
+  string). Integration events are built from the domain events alone (see the ADR 0006 review amendment).

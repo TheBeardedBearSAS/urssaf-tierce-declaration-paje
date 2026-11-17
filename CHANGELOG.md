@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Local lifecycles: `EmployerAccount` (last 020 snapshot, stage), `Mandate` (registered / cancelled, registered or
+  imported) and `DeclarationRecord` (pending → submitting → declared / rejected / already declared / outcome unknown /
+  error / invalid credentials) with a personal-data-free fingerprint; repositories, domain events, `UnitOfWork` with an
+  outbox written in the same transaction, `WorkflowPolicy`, in-memory implementations, and the public integration
+  events `urssaf.paje.*` v1 (`docs/integration-events.md`).
 - HTTP gateway: `UrssafHttpGateway` (the 12 operations behind the `PajeGateway` port and its sub-ports),
   `UrssafGatewayFactory`, `JsonApiClient` (bearer token, one replay after a 401, status mapping per operation class:
   050 / 051 are never resent and an uncertain outcome raises `OutcomeUnknown`, 429 is retryable with `Retry-After`),

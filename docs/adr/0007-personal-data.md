@@ -27,3 +27,14 @@ exception messages"). The reference documents encryption at rest as a recipe (DB
 - A declaration cannot be re-sent from storage alone (consistent with ADR 0003): the host keeps its payroll data.
 - A Doctrine test asserts that no column exists for NIR, names, address or child data.
 - Erasure: ADR 0015.
+
+## Amendment (2026-11-17, lead-accepted, lot 1)
+
+- **Not masked:** amounts, rates, hours and day counts (salaries, `txPas`, declaration periods, care days) and the
+  request aggregates that hold them (`DeclarationCommon`, the declarations, `WithholdingTax`, the estimate requests):
+  they are business figures without an identifier, and a debug dump of them is not a re-identification risk on its own.
+  The exception is `ChildminderChild`, which carries `joursAccueilHandicap` (a child's disability, health data) and is
+  masked.
+- Every `CalendarDate` parameter that holds a birth date (employer, employee, child) or a licence date is
+  `#[SensitiveParameter]`, in the factories and the private constructors (a `CalendarDate` is not masked on its own);
+  tests assert it by reflection.

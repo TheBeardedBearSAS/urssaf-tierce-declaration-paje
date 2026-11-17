@@ -40,6 +40,8 @@ parameters:
                 - DomainException
                 - LogicException
                 - RuntimeException
+                # Base class of every domain exception (violation code + params), ADR 0000.
+                - TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Exception\DomainException
                 # Framework extension points without an interface alternative (bridges only).
                 - Doctrine\DBAL\Types\Type
                 - Symfony\Component\HttpKernel\Bundle\AbstractBundle
@@ -55,6 +57,22 @@ parameters:
         # Repositories/finders return ?Entity for "not found" rather than throwing.
         noNullableReturnTypeDeclaration:
             enabled: false
+
+    ignoreErrors:
+        # The optional query birth date (`dtNaissanceSalarie`) of the three employee identifications defaults to null.
+        -
+            identifier: ergebnis.noParameterWithNullDefaultValue
+            paths:
+                - src/Domain/Employee/EmployeeByNumber.php
+                - src/Domain/Employee/EmployeeByNir.php
+                - src/Domain/Employee/EmployeeByAdministrativeData.php
+        # Deviation from the reference configuration (ADR 0000, smaller adaptations, lead decision): test builders default
+        # their optional arguments to null so that each test names only what it varies; production code is not concerned.
+        -
+            identifier: ergebnis.noParameterWithNullDefaultValue
+            paths:
+                - tests/Unit/Domain/*Test.php
+                - tests/Unit/Domain/*/*Samples.php
 
     shipmonkRules:
         enableAllRules: true

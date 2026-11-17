@@ -43,3 +43,20 @@ project rules forbid inventing a rule.
 
 - A local refusal never reaches URSSAF, and the package never refuses a request the contract accepts.
 - When the sandbox settles the mandate prerequisite, only the default changes.
+
+## Amendment (2026-11-17, lead-accepted, lot 1)
+
+- `nbHeures` ≥ 1 in `InputDeclCommun` has the int32 maximum only (laxer bound).
+- `InputDeclCommun.mntSalaireNetMensuel` strictly positive: a contract rule stated by the Swagger description
+  ("Ce champ doit etre superieur a 0") although the schema has no `minimum` keyword, hence listed here explicitly
+  (the other description-only wordings, numeric postal code, alphanumeric number, "≤ 31 days", are not enforced).
+- `format: int32` is a bound only when the schema gives no explicit `minimum` / `maximum` (`nbHeures`,
+  `joursAccueilHandicap`, `joursAccueil24Consecutive`); `uint8` and other formats are never bounds.
+- §4 decision 10 for an administrative-data identification: at least one field of the identity is set, empty strings
+  counting as absent (`employee_identification.empty`).
+- `inputDeclEnfant`: at least one item in the four declaration bodies (`children.empty`), the "required in practice" of
+  §2.7 read as "present and not empty" (the Swagger has no `minItems`); written down here so that it is not an
+  invented rule.
+- Operation 023 with an `EmployeeByAdministrativeData` identification: the identity of that identification is never sent
+  (api-reference §5), so the wire / application lot must require `EmployeeCreation::identity()` to be non-empty in that
+  case, with a stable violation code, otherwise the request would carry no criterion at all.

@@ -13,7 +13,7 @@ Doctrine bridges, 100 % coverage and MSI).
 
 ## Domain (`src/Domain`)
 
-- `Employer\PajeEmployerNumber` (14 alphanumeric chars), `Employer\EmployerReference` (number + birth date),
+- `Employer\PajeEmployerNumber` (14 characters; the alphanumeric charset is not enforced), `Employer\EmployerReference` (number + birth date),
   `Employer\OnlineAccountState` (`Actif`, `Absent`, `Inactif`, bank details invalid; raw fallback).
 - `Employee\PajeEmployeeNumber` (14 chars), `Employee\Nir` (15 chars, never logged), `Employee\EmployeeIdentification`
   (sum type: by number, by NIR, by administrative data; `InputIdentificationSalarie` fields), `Employee\ActivityType`
@@ -22,10 +22,11 @@ Doctrine bridges, 100 % coverage and MSI).
   `Employee\EmployeeAssociation` (created / associated / already associated + warnings).
 - `Child\Child` (name, first name, birth date; upper-case no-accent pattern), `Child\ChildEntitlementStatus`
   (`0` / `1` / `2`, api-reference §3.1), `Child\ChildCheck`.
-- `Declaration\DeclarationPeriod` (start, end, payment date), `Declaration\Money` (integer cents, ≤ 9999.99),
-  `Declaration\CalculationMode` (`R` / `F` / `S`), `Declaration\YoungestChildAge` (`1` / `2` / `3`),
+- `Declaration\DeclarationPeriod` (start, end, payment date), `Shared\Amount` (signed integer cents, unbounded; the bounds, mostly ≤ 9999.99, are applied per field by
+  `Shared\AmountRules`),
+  `Declaration\CalculationMode` (`R` / `F` / `S`), `Estimate\YoungestChildAge` (`1` / `2` / `3`),
   `Declaration\ChildminderDeclaration` and `Declaration\HomeCareDeclaration` (the two request aggregates, local
-  validation of ranges), `Declaration\ContractEnd` (AMA and GED variants), `Declaration\DeclarationAmounts`
+  validation of ranges), `Declaration\ChildminderContractEnd` and `Declaration\HomeCareContractEnd`, `Declaration\DeclarationAmounts`
   (`DeclarationCommun`), `Declaration\PreDeclarationResult`, `Declaration\DeclarationResult` (adds `referenceDocumentaire`).
 - `Estimate\ContributionEstimate`, `Estimate\ChildminderEstimateRequest`, `Estimate\HomeCareEstimateRequest`.
 - `Mandate\Mandate` (employer reference, registered / cancelled).
@@ -70,7 +71,7 @@ Doctrine bridges, 100 % coverage and MSI).
 
 ## Tests
 
-- Unit: value objects (ranges, patterns, 14 / 15 / 5-char lengths, `Money`), mappers against
+- Unit: value objects (ranges, patterns, 14 / 15 / 5-char lengths, `Amount`), mappers against
   `tests/Fixtures/wire/*.json` (requests serialised, responses parsed, error payloads in both shapes), handlers with a
   fake gateway.
 - Functional: Symfony bundle wiring; Doctrine mappings.
@@ -79,9 +80,17 @@ Doctrine bridges, 100 % coverage and MSI).
   a test child (to add as repository variables). First goals: settle the mandate prerequisite, the `ER_API_DECLA_*` code
   suffixes and the 023 required-fields open points of api-reference §5.
 
+## Draft and factory layer
+
+ADR 0000 §4 ("factories collect every violation of a draft at once") is not in lot 1: each value object throws on its
+own and the aggregates collect only the range violations of their own fields (nested results are not prefixed). The
+single-shot entry point (raw host input to aggregates, nested paths such as `common.hours`, using the raw parsing API of
+`Validation\ViolationCollector`: `required()`, `optional()`, `requiredInteger()`, `requiredBool()`, `merge()`) belongs to
+step 4 below, with the Application commands.
+
 ## Order of work
 
-1. Domain value objects (identifiers, `Money`, child, period) and result types.
+1. Domain value objects (identifiers, `Amount`, child, period) and result types.
 2. Wire mappers + fixtures (requests and responses of the 12 operations, error payloads).
 3. HTTP gateway (OAuth2, error parsing, 429 / 503 handling, no retry on `declare*`).
 4. Application commands and queries: mandate, verifications, association, estimates, pre-declaration, declaration.

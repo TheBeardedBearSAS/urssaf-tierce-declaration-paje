@@ -107,3 +107,10 @@ Smaller adaptations, accepted here:
 
 New decisions and deviations get an ADR (Context / Decision / Consequences), accepted by the lead before the code that
 implements them. An amendment is appended to the ADR it changes, dated and marked lead-accepted.
+
+## Amendment (2026-11-17, lead-accepted, lot 1)
+
+- `ergebnis.noParameterWithNullDefaultValue` is ignored, by path only, for the three employee identifications (optional
+  query birth date) and for the domain test builders (`tests/Unit/Domain/*Test.php`, `*Samples.php`), so that each test
+  names only what it varies. The reference has no such ignore; production code outside the three files is not
+  concerned (justified in `phpstan.neon.dist`).

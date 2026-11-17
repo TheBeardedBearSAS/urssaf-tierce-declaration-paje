@@ -722,8 +722,8 @@ Architecture decisions (inherited from `urssaf-tiers-prestations` or specific to
 
 1. **One operation, one method.** The 12 operations map to 12 gateway methods; AMA and GED are separate methods and
    separate request types (different required fields, different `finDeContrat`), sharing value objects
-   (`DeclarationPeriod`, `Child`, `EmployeeIdentification`, `Money`).
-2. **Employer context.** `EmployerReference` = (`PajeEmployerNumber` 14 alphanumeric chars, `BirthDate`). It is a
+   (`DeclarationPeriod`, `Child`, `EmployeeIdentification`, `Amount`).
+2. **Employer context.** `EmployerReference` = (`PajeEmployerNumber` 14 characters, `CalendarDate` birth date). It is a
    *credential-like* pair: never logged in clear. Employer-scoped operations take it as one parameter.
 3. **Amounts.** Wire amounts are JSON numbers; the domain uses a decimal-safe `Amount` value object (signed integer
    cents, bounds applied per field), never `float`. Parsing from the wire goes through the shortest round-trip
@@ -813,6 +813,24 @@ Architecture decisions (inherited from `urssaf-tiers-prestations` or specific to
   documented. Treated as never resent by default, configurable per operation (ADR 0003).
 - **Response amounts**: no minimum / maximum published for `DeclarationCommun` and `OutputEstimation`; decoded as
   signed amounts with at most 2 decimals (ADR 0008).
-- **`txPas` precision**: not published; decoded with at most 4 decimals (ADR 0008).
+- **`txPas` precision**: not published; decoded as an exact decimal text with no precision cap (ADR 0008, `Rate`).
+- **Optional response fields**: every field of `OutputVerificationPe`, `OutputVerificationSp`, `VerificationEnfantPe` and
+  `Erreur` is optional in the Swagger. Decoding rule (a recorded declaration must never become `outcome_unknown`
+  because a fragment is incomplete): an absent boolean is `false`; an absent string (including `Erreur.code`) is `''`, except the four that stay `null` because absence is meaningful
+  (`numeroPajeSalarie`, `Erreur.message`, `Erreur.description`, `referenceDocumentaire`);
+  an absent `etatCompteEnLigne` is `OnlineAccountState::of('')`; a `verificationEnfantPe` item without
+  `reponseStatutEnfant` is skipped; an absent `inputEnfantPe` gives a `ChildCheck` without child.
+- **`InputFinDeContratAma.enfants`**: the Swagger (prd and sb) types it `InputEnfant`, the PDF (§3.9 / §3.11) and §2.7
+  `InputEnfantAma`. The code takes the PDF superset (`ChildminderChild`, both extra fields optional) as the laxer bound
+  (§4 decision 11); `joursAccueilHandicap` / `joursAccueil24Consecutive` are emitted under `finDeContrat.enfants` only
+  when set.
+- **`mntSalaireNetMensuel` > 0**: stated only in the Swagger description ("Ce champ doit etre superieur a 0"), no
+  `minimum` keyword; enforced as an explicit contract rule (ADR 0009).
+- **`format: int32`**: a bound when the schema gives no explicit one (`nbHeures`, `joursAccueilHandicap`,
+  `joursAccueil24Consecutive`); ignored when `minimum` / `maximum` exist (ADR 0009). `uint8` is never a bound.
+- **Operation 023 identity**: `inputCreationSalarie.inputIdentificationSalarie` is read from `EmployeeCreation` only;
+  the identity of `EmployeeByAdministrativeData` is the 021 query criterion and is never copied into the 023 body.
+  Consequence for the wire / application lot: a 023 request identified by administrative data must have a non-empty
+  `EmployeeCreation::identity()`, enforced with a stable violation code (ADR 0009 amendment).
 - **CESU / PAJE / AE**: the three "Tierce déclaration" APIs share `/tiersdecl/v1` and the mandate model; a shared
   library is a later question, out of scope here.

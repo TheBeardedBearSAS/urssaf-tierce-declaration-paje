@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Domain model (`src/Domain`): identifiers (Pajemploi employer and employee numbers, NIR), employer reference,
+  employee identification sum type (by number, by NIR, by administrative data), address, children, AMA and GED
+  declarations with their contract ends, estimate requests, results (amounts, withholding tax, child checks,
+  non-blocking messages), signed `Amount` in cents, exact `Rate`, strict `CalendarDate`, validation by notification and
+  domain exceptions; personal data masked (ADR 0007).
 - Architecture decision records (`docs/adr/`): the reference architecture inherited from `urssaf-tiers-prestations`
   (ADR 0000) and the PAJE-specific decisions (ADR 0001 to 0015).
 - Project skeleton: Docker tooling, quality gates (`make ci`) and GitHub Actions CI, identical to the other URSSAF

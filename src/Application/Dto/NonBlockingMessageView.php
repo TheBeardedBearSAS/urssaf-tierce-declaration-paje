@@ -40,7 +40,12 @@ final readonly class NonBlockingMessageView
      */
     public static function fromMessages(array $messages): array
     {
-        return array_map(self::fromMessage(...), $messages);
+        $views = [];
+        foreach ($messages as $message) {
+            $views[] = self::fromMessage($message);
+        }
+
+        return $views;
     }
 
     /**

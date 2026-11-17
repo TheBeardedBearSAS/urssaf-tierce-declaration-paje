@@ -54,7 +54,12 @@ final readonly class DoctrineOutbox implements Outbox
             ->executeQuery()
             ->fetchAllAssociative();
 
-        return array_map(self::entry(...), $rows);
+        $entries = [];
+        foreach ($rows as $row) {
+            $entries[] = self::entry($row);
+        }
+
+        return $entries;
     }
 
     #[Override]

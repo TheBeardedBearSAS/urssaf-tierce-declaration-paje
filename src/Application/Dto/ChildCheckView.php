@@ -37,6 +37,11 @@ final readonly class ChildCheckView
      */
     public static function fromChecks(array $checks): array
     {
-        return array_map(self::fromCheck(...), $checks);
+        $views = [];
+        foreach ($checks as $check) {
+            $views[] = self::fromCheck($check);
+        }
+
+        return $views;
     }
 }

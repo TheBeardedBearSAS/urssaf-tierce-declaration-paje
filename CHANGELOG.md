@@ -7,6 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-17
+
+First release.
+
+### Upgrading
+
+- Driver `doctrine`: generate and run the migration for the `urssaf_paje_*` tables (`doctrine:migrations:diff
+  --em=urssaf_paje`, `doctrine:migrations:migrate`); the package ships no migration. `urssaf:paje:check` reports the
+  missing tables.
+
 ### Added
 
 - Sandbox contract suite (`make test-contract`, manual CI job): live tests of the 12 operations against the URSSAF

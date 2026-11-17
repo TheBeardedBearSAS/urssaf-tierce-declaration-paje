@@ -21,13 +21,12 @@ Developed and maintained by [The Bearded Bear](https://the-bearded-bear.com).
 > process; the URSSAF documentation remains the authority on the API, and you remain responsible for the data your
 > application sends to URSSAF.
 
-> 🚧 **Status: implemented, not released yet.** The domain model, the HTTP gateway (OAuth2, quotas, error
-> classification), the use cases (employers, mandates, declarations, unknown outcomes, outbox) and the framework-free
-> wiring are implemented and covered by tests. The Symfony bundle is implemented ([docs/symfony.md](docs/symfony.md))
-> and the Doctrine bridge is available ([docs/doctrine.md](docs/doctrine.md)): persistence is Doctrine (the default of
-> the bundle when `doctrine/orm` is installed), in memory (tests) or yours. No version is tagged yet and the API may
-> still change. The sandbox contract suite has not been run yet (open points in
-> [docs/api-reference.md](docs/api-reference.md) §5).
+> **Status: 0.1.0 released; sandbox contract run still to do (see [docs/roadmap.md](docs/roadmap.md)).** The 12
+> operations, the local workflow (employers, mandates, declarations, unknown outcomes, outbox), the standalone builder,
+> the Symfony bundle ([docs/symfony.md](docs/symfony.md)) and the Doctrine bridge ([docs/doctrine.md](docs/doctrine.md))
+> are in place; the open points of [docs/api-reference.md](docs/api-reference.md) §5 stay open until URSSAF publishes
+> them or the sandbox contract run settles them. See the architecture decision records in
+> [docs/adr/](docs/adr/README.md).
 
 ## Scope
 

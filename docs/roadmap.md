@@ -4,8 +4,8 @@ Specification: [api-reference.md](api-reference.md). Architecture, conventions a
 `thebeardedbear/urssaf-tiers-prestations` (hexagonal layers enforced by Deptrac, PSR-only runtime, Symfony and
 Doctrine bridges, 100 % coverage and MSI).
 
-> Status (2026-11-17): steps 1 to 7 below are implemented on `feat/implementation` (one commit per lot; step 4 in two
-> commits). What remains: running the contract suite on the sandbox to settle api-reference §5, then a first release.
+> Status: steps 1 to 7 below are implemented; version 0.1.0 released on 2026-11-17. What remains: running the contract
+> suite on the sandbox to settle api-reference §5.
 
 ## Already in place (skeleton)
 

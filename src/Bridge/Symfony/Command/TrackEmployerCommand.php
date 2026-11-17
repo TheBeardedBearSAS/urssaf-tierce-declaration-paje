@@ -1,0 +1,59 @@
+<?php
+
+declare(strict_types=1);
+
+namespace TheBeardedBear\UrssafTierceDeclarationPaje\Bridge\Symfony\Command;
+
+use Override;
+use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Exception\InvalidOptionException;
+use Symfony\Component\Console\Helper\QuestionHelper;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Application\Command\TrackEmployer;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Application\Command\TrackEmployerHandler;
+use TheBeardedBear\UrssafTierceDeclarationPaje\Domain\Shared\ExternalReference;
+
+/**
+ * Starts to follow an employer: URSSAF verifies it (method 020) and the account is created with its first status. The birth date of the employer is asked in a hidden prompt (ADR 0013).
+ */
+#[AsCommand(name: 'urssaf:paje:employer:track', description: 'Track an employer after verifying it with URSSAF (method 020)')]
+final class TrackEmployerCommand extends Command
+{
+    private const OPTION_REFERENCE = 'reference';
+
+    /**
+     * @param list<string> $configuredTenants
+     */
+    public function __construct(
+        private readonly TrackEmployerHandler $handler,
+        private readonly array $configuredTenants,
+    ) {
+        parent::__construct();
+    }
+
+    #[Override]
+    protected function configure(): void
+    {
+        CommandPersonalInputs::addEmployer($this);
+        CommandOptions::addTenant($this, 'Tenant id (default: the only configured tenant)');
+        $this->addOption(self::OPTION_REFERENCE, null, InputOption::VALUE_REQUIRED, 'Your reference of the employer (required)');
+    }
+
+    #[Override]
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        return CommandReports::guard($output, function () use ($input, $output): int {
+            $tenant = CommandTenants::tenantOrSingleConfigured($input, $this->configuredTenants);
+            $reference = CommandOptions::text($input, self::OPTION_REFERENCE) ?? throw new InvalidOptionException('The --reference option is required.');
+            $externalReference = ExternalReference::fromString($reference);
+            $employer = CommandPersonalInputs::employer($input, $output, new QuestionHelper());
+
+            CommandReports::renderFields($output, CommandViews::trackedAccount(($this->handler)(new TrackEmployer($tenant, $externalReference, $employer))));
+
+            return Command::SUCCESS;
+        });
+    }
+}

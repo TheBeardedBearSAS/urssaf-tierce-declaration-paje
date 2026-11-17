@@ -23,7 +23,7 @@ Developed and maintained by [The Bearded Bear](https://the-bearded-bear.com).
 
 > 🚧 **Status: implemented, not released yet.** The domain model, the HTTP gateway (OAuth2, quotas, error
 > classification), the use cases (employers, mandates, declarations, unknown outcomes, outbox) and the framework-free
-> wiring are implemented and covered by tests. The Symfony and Doctrine bridges are coming: until then, persistence is in
+> wiring are implemented and covered by tests. The Symfony bundle is implemented ([docs/symfony.md](docs/symfony.md)); the Doctrine bridge is coming: until then, persistence is in
 > memory or yours. No version is tagged yet and the API may still change. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Scope
@@ -95,6 +95,7 @@ contacts URSSAF.
 
 - [docs/api-reference.md](docs/api-reference.md) — technical reference (single source of truth for the package).
 - [docs/standalone.md](docs/standalone.md) — wiring without a framework, scheduling, testing with the simulator.
+- [docs/symfony.md](docs/symfony.md) — Symfony bundle: configuration, commands, Messenger, scheduler, locks, diagnostics, translations.
 - [docs/workflow.md](docs/workflow.md) — lifecycles, outcome and re-entry tables, unknown outcomes, safety crons.
 - [docs/roadmap.md](docs/roadmap.md) — planned architecture and order of work.
 - [docs/adr/](docs/adr/README.md) — architecture decision records.

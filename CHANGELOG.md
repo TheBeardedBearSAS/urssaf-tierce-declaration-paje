@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Symfony bundle `UrssafTierceDeclarationPajeBundle` (alias `urssaf_tierce_declaration_paje`, Symfony 6.4 / 7.x):
+  configuration with build-time rules, per-tenant credentials from `%env()%`, console commands `urssaf:paje:*`
+  (hidden prompts for birth dates and NIR, payloads from a JSON file, no URSSAF description printed), Messenger employer
+  refresh, non-blocking locks, safety-cron schedule, diagnostics (`urssaf:paje:check`, `urssaf:paje:status`),
+  English and French translations of every violation code, simulator refused in production (`docs/symfony.md`).
 - Use cases: track / import employers, register / import / cancel / record mandates, verify employer, employee and
   children, associate an employee, estimate contributions, pre-declare and declare a salary (AMA / GED), reconcile and
   resolve unknown outcomes, requeue after invalid credentials, relay and purge the outbox, forget an employer, workflow

@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Architecture decision records (`docs/adr/`): the reference architecture inherited from `urssaf-tiers-prestations`
+  (ADR 0000) and the PAJE-specific decisions (ADR 0001 to 0015).
 - Project skeleton: Docker tooling, quality gates (`make ci`) and GitHub Actions CI, identical to the other URSSAF
   packages.
 - Specification: official OpenAPI contracts (`docs/openapi/`), official documentation (links in `docs/api-reference.md`, local copy in the git-ignored `docs/reference/`), technical
@@ -19,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Deptrac: `Contract`, `Testing` and `Standalone` layers, as in the reference package. PHPStan analyses against PHP 8.2
+  (`phpVersion: 80200`, typed-constant coverage disabled) so that `make ci` is identical on every supported version.
 - CI: verifiable quality proofs (Codecov, Stryker Dashboard, SonarQube Cloud, OpenSSF Scorecard; active once the
   repository is public), every GitHub Action pinned to a commit SHA and kept up to date by Dependabot, hadolint on the
   Dockerfile (`make hadolint`, part of `make ci`) with a non-root development image, and benchmarks with PHPBench

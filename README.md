@@ -48,6 +48,7 @@ OAuth2 client credentials, scope `tiersdecl.paje`, base URL `https://api.urssaf.
 
 - [docs/api-reference.md](docs/api-reference.md) — technical reference (single source of truth for the package).
 - [docs/roadmap.md](docs/roadmap.md) — planned architecture and order of work.
+- [docs/adr/](docs/adr/README.md) — architecture decision records.
 - [docs/openapi/](docs/openapi/) — official OpenAPI contract(s) from the URSSAF API portal.
 - `docs/reference/` — official URSSAF documentation: not versioned (URSSAF documents), download it from the links in [docs/api-reference.md](docs/api-reference.md) into this local, git-ignored folder.
 - Catalogue page: https://portailapi.urssaf.fr/fr/catalogue-api/prd/td-paje

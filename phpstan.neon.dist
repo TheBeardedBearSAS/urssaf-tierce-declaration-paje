@@ -6,6 +6,9 @@ includes:
 
 parameters:
     level: max
+    # Analyse against the lowest supported PHP version (composer "php": ">=8.2"), whatever the runtime: on PHP 8.3+
+    # PHPStan would otherwise demand typed class constants, a PHP 8.3 feature the package cannot use.
+    phpVersion: 80200
     paths:
         - src
         - tests
@@ -23,7 +26,10 @@ parameters:
         return: 100
         param: 100
         property: 100
-        constant: 100
+        # Typed class constants are a PHP 8.3 feature and the package supports PHP 8.2 (composer "php": ">=8.2"): the
+        # plugin skips this check on PHP 8.2 and would demand them on PHP 8.3+, which breaks `make ci PHP_VERSION=8.4`.
+        # Disabled so that the gate is identical on every supported version (ADR 0000).
+        constant: 0
 
     ergebnis:
         # AbstractBundle::loadExtension/prependExtension and CompilerPassInterface::process impose ContainerBuilder parameters.

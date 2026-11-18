@@ -47,7 +47,12 @@ final readonly class AuthenticationCheck implements InstallationCheck
             return [new CheckResult(self::NAME, '', CheckStatus::Skipped, 'Not checked (--skip-remote).')];
         }
 
-        return array_map($this->check(...), $context->tenants);
+        $results = [];
+        foreach ($context->tenants as $tenantId) {
+            $results[] = $this->check($tenantId);
+        }
+
+        return $results;
     }
 
     private function check(TenantId $tenantId): CheckResult

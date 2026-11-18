@@ -43,3 +43,10 @@ Symfony and Doctrine bridges).
 
 Out of scope: the URSSAF platform itself (report those issues to URSSAF), and vulnerabilities in dependencies that
 this package does not make exploitable (report them upstream).
+
+## Security design and review
+
+- [Assurance case](docs/security/assurance-case.md): security requirements, threat model, trust boundaries, secure
+  design principles and the countermeasures against common implementation weaknesses.
+- [Security review, November 2026](docs/security/security-review-2026-11.md): design and code review against that case,
+  with its findings.

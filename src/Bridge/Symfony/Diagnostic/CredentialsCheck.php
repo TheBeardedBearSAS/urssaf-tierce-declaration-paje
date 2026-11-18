@@ -29,7 +29,12 @@ final readonly class CredentialsCheck implements InstallationCheck
     #[Override]
     public function run(CheckContext $context): array
     {
-        return array_map($this->check(...), $context->tenants);
+        $results = [];
+        foreach ($context->tenants as $tenantId) {
+            $results[] = $this->check($tenantId);
+        }
+
+        return $results;
     }
 
     private function check(TenantId $tenantId): CheckResult

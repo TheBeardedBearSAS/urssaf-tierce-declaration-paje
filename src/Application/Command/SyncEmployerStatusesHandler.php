@@ -51,7 +51,12 @@ final readonly class SyncEmployerStatusesHandler
     {
         $accounts = $this->accounts->findLeastRecentlyChecked($command->tenantId, $this->policy->pageSize($command->limit));
 
-        return BatchReport::of(...array_map($this->sync(...), $accounts));
+        $items = [];
+        foreach ($accounts as $account) {
+            $items[] = $this->sync($account);
+        }
+
+        return BatchReport::of(...$items);
     }
 
     /**

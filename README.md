@@ -104,6 +104,8 @@ contacts URSSAF.
 - [docs/testing.md](docs/testing.md) — test suites, fakes, quality gates and the sandbox contract suite.
 - [docs/roadmap.md](docs/roadmap.md) — planned architecture and order of work.
 - [docs/adr/](docs/adr/README.md) — architecture decision records.
+- Security design and review: [assurance case](docs/security/assurance-case.md) (threat model, trust boundaries,
+  design principles, countered weaknesses) and [security review](docs/security/security-review-2026-11.md).
 - [docs/openapi/](docs/openapi/) — official OpenAPI contract(s) from the URSSAF API portal.
 - `docs/reference/` — official URSSAF documentation: not versioned (URSSAF documents), download it from the links in [docs/api-reference.md](docs/api-reference.md) into this local, git-ignored folder.
 - Catalogue page: https://portailapi.urssaf.fr/fr/catalogue-api/prd/td-paje
@@ -117,6 +119,7 @@ PHP 8.2+. Development only needs Docker: every `make` target runs in a container
 ```sh
 make install     # build the image, install dependencies
 make ci          # full quality gate: cs, rector, phpstan, mago, deptrac, composer checks, hadolint, guard, coverage, infection
+make coverage-branches # branch coverage (Xdebug, slow), at least 96 % enforced
 make test        # unit + functional tests
 make bench       # benchmarks (PHPBench, tests/Benchmark), added with the implementation
 make test-contract  # live sandbox contract tests (skipped without credentials), see below
@@ -184,8 +187,9 @@ Project page and integration offer: [the-bearded-bear.com/open-source/urssaf-tie
 
 ## Contributing and security
 
-Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Report vulnerabilities privately as described in
-[SECURITY.md](SECURITY.md), never in a public issue.
+Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md).
+The project's governance is described in [GOVERNANCE.md](GOVERNANCE.md) and its direction in [ROADMAP.md](ROADMAP.md).
+Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md), never in a public issue.
 
 ## License
 

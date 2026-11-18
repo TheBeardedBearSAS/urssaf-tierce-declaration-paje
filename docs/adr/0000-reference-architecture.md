@@ -152,3 +152,7 @@ implements them. An amendment is appended to the ADR it changes, dated and marke
 - Infection `timeout` is 180 s instead of the reference 30 s, and `make infection` and the CI job fail when a mutant
   is *skipped*: Infection never runs a mutant whose covering tests exceed the limit in total, while MSI still reads
   100 %. The change makes the gate stricter (justified in `infection.json5`).
+- Infection `timeoutsAsEscaped` is on, and `make infection` and the CI job also fail on any timed-out mutant and any
+  syntax error: a timeout or an invalid mutant is not a verdict, so none may remain. The production code is written so
+  that every mutant terminates (bounded retries instead of `while (true)`) and compiles (no non-associative comparison
+  chain a mutator could produce).

@@ -22,6 +22,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Infection: no mutant goes unevaluated. `timeoutsAsEscaped` is on, and `make infection` and the CI job also fail on any
+  timed-out mutant or syntax error (invalid mutant), next to the skipped-mutant check. `MandateRecorder` retries over a
+  bounded range instead of `while (true)` (same behaviour: three attempts at most), and two expressions are written with
+  an explanatory variable so that no mutant is invalid PHP.
 - Infection: `timeout` raised from 30 s to 180 s, and `make infection` and the CI job fail when a mutant is skipped (Infection never runs a mutant whose covering tests exceed the limit, yet reports MSI 100 %).
 - Every source file now carries a copyright and `SPDX-License-Identifier: MIT` header, enforced by PHP CS Fixer
   (`header_comment`) for PHP and by `make guard` (`bin/check-spdx`) for the other source files.

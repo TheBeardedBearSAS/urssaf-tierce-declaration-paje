@@ -55,6 +55,8 @@ use Throwable;
  * The rollback of a failed attempt needs a transactional TransactionManager: with the default
  * ImmediateTransactionManager the aggregates saved before the conflict stay saved, and the next attempt completes them
  * (the mandate exists but the account stage does not follow: it is repaired).
+ *
+ * @mago-expect lint:too-many-methods
  */
 final readonly class MandateRecorder
 {
@@ -194,6 +196,11 @@ final readonly class MandateRecorder
     }
 
     /**
+     * Runs the attempts one after the other: a conflict starts the next one, any other failure ends the recording. The
+     * retries run over a fixed range (no counter that a mutation could keep from ever ending) and the last attempt
+     * stands outside of it, so that no path can spin without end: a mutation of the loop can only change the number of
+     * attempts, which the tests observe.
+     *
      * @template T
      *
      * @param Closure(): T $attempt
@@ -206,23 +213,39 @@ final readonly class MandateRecorder
      */
     private function attempts(?Operation $operation, Closure $attempt): mixed
     {
-        $number = 0;
-        while (true) {
-            ++$number;
+        foreach (range(1, self::MAX_ATTEMPTS - 1) as $number) {
             try {
                 return $attempt();
             } catch (Throwable $failure) {
-                $code = $failure instanceof InvariantViolation || $failure instanceof RecordNotFound ? $failure->violationCode() : null;
-                $conflict = $code !== null && \in_array($code, self::CONFLICTS, true);
-                if ($conflict && $number < self::MAX_ATTEMPTS) {
-                    continue;
+                $code = self::codeOf($failure);
+                if ($code === null || !\in_array($code, self::CONFLICTS, true)) {
+                    throw self::failure($operation, $number, $failure);
                 }
-                if (!$operation instanceof Operation) {
-                    throw $failure;
-                }
-
-                throw MandateRecordingFailed::after($operation, $number, $code ?? $failure::class, $failure);
             }
         }
+
+        try {
+            return $attempt();
+        } catch (Throwable $failure) {
+            throw self::failure($operation, self::MAX_ATTEMPTS, $failure);
+        }
+    }
+
+    private static function codeOf(Throwable $failure): ?string
+    {
+        return $failure instanceof InvariantViolation || $failure instanceof RecordNotFound ? $failure->violationCode() : null;
+    }
+
+    /**
+     * What the caller gets for the failure of the attempt $number: the failure itself without a call to URSSAF, the
+     * {@see MandateRecordingFailed} that carries it otherwise.
+     */
+    private static function failure(?Operation $operation, int $number, Throwable $failure): Throwable
+    {
+        if (!$operation instanceof Operation) {
+            return $failure;
+        }
+
+        return MandateRecordingFailed::after($operation, $number, self::codeOf($failure) ?? $failure::class, $failure);
     }
 }

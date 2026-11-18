@@ -139,7 +139,10 @@ final class ConfigurationRules
         /** @var array{name: ?string, value: ?string} $header */
         $header = $value;
 
-        return ($header['name'] === null || $header['name'] === '') !== ($header['value'] === null || $header['value'] === '');
+        $withoutName = $header['name'] === null || $header['name'] === '';
+        $withoutValue = $header['value'] === null || $header['value'] === '';
+
+        return $withoutName !== $withoutValue;
     }
 
     /**

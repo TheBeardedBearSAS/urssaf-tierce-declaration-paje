@@ -60,11 +60,12 @@ final class ResolveDeclarationOutcomeCommand extends Command
             $selector = CommandSelectors::declarationSelector($input);
             $declaredAs = CommandOptions::text($input, self::OPTION_DECLARED_AS);
             $notReceived = $input->getOption(self::OPTION_NOT_RECEIVED) === true;
-            if (($declaredAs !== null) === $notReceived) {
+            $declared = $declaredAs !== null;
+            if ($declared === $notReceived) {
                 throw new InvalidOptionException('Give one of --declared-as or --not-received.');
             }
 
-            $declaration = ($this->resolve)($declaredAs !== null
+            $declaration = ($this->resolve)($declared
                 ? ResolveDeclarationOutcome::asDeclared($tenant, $selector, $declaredAs)
                 : ResolveDeclarationOutcome::asNotReceived($tenant, $selector));
             CommandReports::renderFields($output, CommandViews::declaration($declaration));

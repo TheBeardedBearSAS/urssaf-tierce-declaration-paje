@@ -25,6 +25,11 @@
     // so 30 s left mutants untested on slower machines (139 in the auto-entrepreneur package). A higher limit makes the gate stricter, not weaker;
     // `make infection` and the CI job also fail when any mutant is skipped.
     "timeout": 180,
+    // A timed-out mutant is not a verdict: nothing proves a test would have killed it. The code is written so that every
+    // mutant terminates (bounded retries, no `while (true)`), hence a timeout can only come from a covering test that is
+    // too slow, and it counts as escaped (MSI below 100 %) instead of being silently credited as killed.
+    // `make infection` and the CI job also fail on any timed-out mutant and on any syntax error (an invalid mutant).
+    "timeoutsAsEscaped": true,
     "minMsi": 100,
     "minCoveredMsi": 100
 }

@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- `SlidingWindowRateLimiter` counts the calls per second instead of keeping one entry per call: a check costs the number of distinct seconds in the window, not the number of calls (same quota, window and retry delay). Filling a large quota no longer slows Xdebug path coverage down quadratically.
 - Infection: no mutant goes unevaluated. `timeoutsAsEscaped` is on, and `make infection` and the CI job also fail on any
   timed-out mutant or syntax error (invalid mutant), next to the skipped-mutant check. `MandateRecorder` retries over a
   bounded range instead of `while (true)` (same behaviour: three attempts at most), and two expressions are written with
